@@ -1,0 +1,16 @@
+body {
+  font-family: 'Saira', sans-serif;
+}
+
+.card-body {
+  font-family: 'Source Code Pro', monospace;
+}
+
+.pre-tiger, .pre-wat {
+  min-height: 320px;
+  max-height: 320px;
+}
+
+.pre-output {
+  min-height: 700px;
+}

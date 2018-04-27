@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0" />
+
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <!-- <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro|Source+Sans+Pro" rel="stylesheet"> -->
+  <link href="https://fonts.googleapis.com/css?family=Saira|Source+Code+Pro" rel="stylesheet">
+
+  <link href="styles.css" rel="stylesheet">
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3">
+    <a class="navbar-brand" href="#">tiger-wat testbench</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          constants
+        </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" href="#">ints</a>
+            <a class="dropdown-item" href="#">limits</a>
+          </div>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        arithmetic
+        </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" href="#">add</a>
+            <a class="dropdown-item" href="#">subtract</a>
+            <a class="dropdown-item" href="#">multiply</a>
+            <a class="dropdown-item" href="#">divide</a>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card mb-3">
+          <div class="card-header">
+            add.tig
+          </div>
+          <div class="card-body">
+            <pre class="pre-scrollable pre-tiger"><code>
+/* correct if */
+if (10 > 20) then 30 else 40
+
+/* correct if */
+if (10 > 20) then 30 else 40
+
+/* correct if */
+if (10 > 20) then 30 else 40
+
+/* correct if */
+if (10 > 20) then 30 else 40
+
+/* correct if */
+if (10 > 20) then 30 else 40
+
+/* correct if */
+if (10 > 20) then 30 else 40
+
+/* correct if */
+if (10 > 20) then 30 else 40
+            </code></pre>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            add.wat
+          </div>
+          <div class="card-body">
+            <pre class="pre-scrollable pre-wat"><code>
+
+            </code></pre>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card card-output">
+          <div class="card-header">
+            output
+          </div>
+          <div class="card-body">
+            <pre class="pre-scrollable pre-output"><code>
+
+            </code></pre>
+          </div>
+          <div class="card-footer">
+            <div class="row">
+              <button type="button" class="btn btn-outline-dark disabled ml-2 mr-2">
+                  <i class="fa fa-check text-success"></i>
+                  Validated
+                </button>
+
+              <button type="button" class="btn btn-outline-dark disabled mr-2">
+                  <i class="fa fa-check text-success"></i>
+                  Loaded
+                </button>
+
+              <button type="button" class="btn btn-outline-dark disabled">
+                  <!-- <i class="fa fa-check text-success"></i> -->
+                  <i class="fa fa-times text-danger"></i>
+                    Passes all tests
+                </button>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+
+</html>
