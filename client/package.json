@@ -1,0 +1,15 @@
+{
+  "name": "tiger-wat",
+  "version": "0.1.0",
+  "description": "testbench for tiger-wat",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "Brian Ginsburg",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.16.3"
+  }
+}
