@@ -11,7 +11,6 @@
 
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.min.css" />
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
-  <!-- <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro|Source+Sans+Pro" rel="stylesheet"> -->
   <link href="https://fonts.googleapis.com/css?family=Saira|Source+Code+Pro" rel="stylesheet">
 
   <link href="styles.css" rel="stylesheet">
@@ -31,8 +30,8 @@
           constants
         </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <a class="dropdown-item" href="#">ints</a>
-            <a class="dropdown-item" href="#">limits</a>
+            <span class="dropdown-item" id="ints">ints</span>
+            <span class="dropdown-item" id="limits">limits</span>
           </div>
         </li>
         <li class="nav-item dropdown">
@@ -40,7 +39,7 @@
         arithmetic
         </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <a class="dropdown-item" href="#">add</a>
+            <a class="dropdown-item" href="#" id="add">add</a>
             <a class="dropdown-item" href="#">subtract</a>
             <a class="dropdown-item" href="#">multiply</a>
             <a class="dropdown-item" href="#">divide</a>
@@ -54,40 +53,21 @@
     <div class="row">
       <div class="col-md-6">
         <div class="card mb-3">
-          <div class="card-header">
-            add.tig
+          <div class="card-header" id="tiger-header">
+            tiger source
           </div>
           <div class="card-body">
-            <pre class="pre-scrollable pre-tiger"><code>
-/* correct if */
-if (10 > 20) then 30 else 40
+            <pre class="pre-scrollable" id="tiger-body"><code>
 
-/* correct if */
-if (10 > 20) then 30 else 40
-
-/* correct if */
-if (10 > 20) then 30 else 40
-
-/* correct if */
-if (10 > 20) then 30 else 40
-
-/* correct if */
-if (10 > 20) then 30 else 40
-
-/* correct if */
-if (10 > 20) then 30 else 40
-
-/* correct if */
-if (10 > 20) then 30 else 40
             </code></pre>
           </div>
         </div>
         <div class="card">
-          <div class="card-header">
-            add.wat
+          <div class="card-header" id="wat-header">
+            wat output
           </div>
           <div class="card-body">
-            <pre class="pre-scrollable pre-wat"><code>
+            <pre class="pre-scrollable" id="wat-body"><code>
 
             </code></pre>
           </div>
@@ -96,12 +76,12 @@ if (10 > 20) then 30 else 40
       <div class="col-md-6">
         <div class="card card-output">
           <div class="card-header">
-            output
+            test output
           </div>
           <div class="card-body">
-            <pre class="pre-scrollable pre-output"><code>
+            <pre class="pre-scrollable" id="output-body">
 
-            </code></pre>
+            </pre>
           </div>
           <div class="card-footer">
             <div class="row">
@@ -119,13 +99,13 @@ if (10 > 20) then 30 else 40
                   <!-- <i class="fa fa-check text-success"></i> -->
                   <i class="fa fa-times text-danger"></i>
                     Passes all tests
-                </button>
+              </button>
 
+              <script type="text/javascript" src="tests.js"></script>
             </div>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </body>

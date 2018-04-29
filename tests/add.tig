@@ -1,0 +1,5 @@
+/* this is probably not accurate */
+
+function add (x:int, y:int) : int {
+  x + y
+}
