@@ -5,9 +5,9 @@
   (import "env" "print_int" (func $print_int (type $t0)))
   (table $0 0 anyfunc)
   (func $main (type $t1)
-    i32.const 1 
-    i32.const 1 
-    i32.add
+    i32.const 42
+    call $print_int
+    i32.const 83
     call $print_int
   )
   (export "main" (func $main))

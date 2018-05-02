@@ -22,36 +22,37 @@
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
-
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav mr-auto">
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          constants
-        </a>
-          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <span class="dropdown-item" id="ints">ints</span>
-            <span class="dropdown-item" id="limits">limits</span>
-          </div>
-        </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        arithmetic
-        </a>
-          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <a class="dropdown-item" href="#" id="add">add</a>
-            <a class="dropdown-item" href="#">subtract</a>
-            <a class="dropdown-item" href="#">multiply</a>
-            <a class="dropdown-item" href="#">divide</a>
-          </div>
-        </li>
-      </ul>
-    </div>
   </nav>
 
-  <div class="container">
+  <div class="container-fluid">
     <div class="row">
-      <div class="col-md-6">
+      <div class="col-md-2">
+        <div class="card mb-3">
+          <div class="card-header">
+            tests
+          </div>
+          <div class="card-body" id="test-selection">
+            <div class="list-group list-group-flush">
+              constants
+              <div class="list-group list-group-flush ml-2">
+                <a class="list-group-item-action" href="#">ints</a>
+                <a class="list-group-item-action" href="#">limits</a>
+              </div>
+            </div>
+            <div class="list-group list-group-flush">
+              arithmetic
+              <div class="list-group list-group-flush ml-2">
+                <a class="list-group-item-action" href="#">add</a>
+                <a class="list-group-item-action" href="#">subtract</a>
+                <a class="list-group-item-action" href="#">multiply</a>
+                <a class="list-group-item-action" href="#">divide</a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
         <div class="card mb-3">
           <div class="card-header" id="tiger-header">
             tiger source
@@ -93,7 +94,7 @@
               <button type="button" class="btn btn-outline-dark disabled mr-2">
                   <i class="fa fa-check text-success"></i>
                   Loaded
-                </button>
+              </button>
 
               <button type="button" class="btn btn-outline-dark disabled">
                   <!-- <i class="fa fa-check text-success"></i> -->

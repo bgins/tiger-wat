@@ -16,7 +16,10 @@ body {
   max-height: 415px;
 }
 
-
 #output-body {
   min-height: 700px;
+}
+
+#test-selection {
+  min-height: 820px;
 }

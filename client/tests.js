@@ -6,13 +6,16 @@ const watHeader = document.getElementById('wat-header');
 const watBody = document.getElementById('wat-body');
 const outputBody = document.getElementById('output-body');
 
-// WebAssembly.Memory object
+var outputString = '';
+
+// imports has WebAssembly.Memory object and helper functions
 var importObject = {
   env: {
     memory: new WebAssembly.Memory({
       initial: 10,
       maximum: 100
-    })
+    }),
+    print_int: arg => outputString += arg + '\n'
   }
 };
 
@@ -22,6 +25,7 @@ const fetchSource = (test, filetype) => {
       return response.text();
     });
 };
+
 
 function runTest(test) {
   fetchSource(test, 'tig')
@@ -36,48 +40,25 @@ function runTest(test) {
       watBody.textContent = watSource;
     });
 
+  // fetch and instantiate wasm then run test
   WebAssembly.instantiateStreaming(fetch('tests/' + test + '.wasm'), importObject).then(wasmObject => {
-
-    // console.log('1: ' + wasmObject.instance.exports.main());
-
-    var outputString = '';
-    switch (test) {
-      case 'add':
-        for (var i = 0, j = 10; i < 10; i++, j--) {
-            var result = wasmObject.instance.exports.add(i, j);
-            if (result === 10) { outputString += '✔'; }
-            else { outputString += '✖'; }
-            outputString += ' expect ' + i + ' + ' + j + ' to equal 10\n';
-        }
-        outputBody.textContent = outputString;
-        break;
-      case 'ints':
-        for (var i = 0; i < 10; i++) {
-          outputString += test + '\n';
-        }
-        outputBody.textContent = outputString;
-        break;
-      case 'limits':
-        for (var i = 0; i < 10; i++) {
-          outputString += test + '\n';
-        }
-        outputBody.textContent = outputString;
-        break;
-      default:
-        console.log('no such test');
-        break;
-    }
+    wasmObject.instance.exports.main();
+    outputBody.textContent = outputString;
+    outputString = '';
   });
 }
 
-document.getElementById('ints').onclick = () => {
-  runTest('ints');
-}
 
-document.getElementById('limits').onclick = () => {
-  runTest('limits');
-}
+// attach click handlers to test menu entries
+var tests = ['ints', 'limits', 'add', 'subtract', 'multiply', 'divide'];
 
-document.getElementById('add').onclick = () => {
-  runTest('add');
-}
+jQuery('#test-selection')
+  .children()
+  .children()
+  .children()
+  .each((index, test) => {
+    jQuery(test)
+      .on('click', () => {
+        runTest(tests[index]);
+      });
+  });
