@@ -16,7 +16,7 @@ body {
   max-height: 415px;
 }
 
-#output-body {
+#output-body, #expected-body {
   min-height: 700px;
 }
 
