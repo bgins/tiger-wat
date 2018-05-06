@@ -7,18 +7,19 @@ const watBody = document.getElementById('wat-body');
 const outputBody = document.getElementById('output-body');
 const expectedBody = document.getElementById('expected-body');
 
+// indicators
+const notrunIndicator = 'fa fa-circle-thin fa-fw';
+const successIndicator = 'fa fa-check text-success fa-fw';
+const failureIndicator = 'fa fa-times text-danger fa-fw';
+
 var outputString = '';
 var lastTest = '';
 
 const resetUI = () => {
-    document.getElementById('test-implemented').className = 'fa fa-circle-thin';
-    document.getElementById('test-generated').className = 'fa fa-circle-thin';
-    document.getElementById('test-validated').className = 'fa fa-circle-thin';
-    document.getElementById('test-passes').className = 'fa fa-circle-thin';
-    tigerBody.textContent = '';
-    watBody.textContent = '';
-    expectedBody.textContent = '';
-    outputBody.textContent = '';
+  tigerBody.textContent = '';
+  watBody.textContent = '';
+  expectedBody.textContent = '';
+  outputBody.textContent = '';
 }
 
 // imports has WebAssembly.Memory object and helper functions
@@ -43,7 +44,7 @@ const fetchSource = (test, filetype, indicator) => {
     })
     .then(response => {
       if (indicator !== undefined) {
-        document.getElementById(indicator).className = 'fa fa-check text-success';
+        document.getElementById(indicator).className = successIndicator;
       }
       return response.text();
     })
@@ -55,7 +56,7 @@ const fetchSource = (test, filetype, indicator) => {
     })
     .catch(err => {
       if (indicator !== undefined) {
-        document.getElementById(indicator).className = 'fa fa-times text-danger';
+        document.getElementById(indicator).className = failureIndicator;
       }
       return {
         success: false,
@@ -79,6 +80,7 @@ const fetchWat = async (test) => {
     watBody.textContent = wat.result;
     return wat.success;
   } else {
+    document.getElementById('test-generated').className = notrunIndicator;
     return false;
   }
 };
@@ -93,22 +95,25 @@ const fetchWasm = async (test) => {
   if (watSuccess === true) {
     WebAssembly.instantiateStreaming(fetch('tests/' + test + '.wasm'), importObject)
       .then(async wasmObject => {
-        document.getElementById('test-validated').className = 'fa fa-check text-success';
+        document.getElementById('test-validated').className = successIndicator;
         wasmObject.instance.exports.main();
         outputBody.textContent = 'actual:\n' + outputString;
         var expected = await fetchExpected(test, 'out.bak');
         expectedBody.textContent = 'expected:\n' + expected;
         if (expected === outputString) {
-          document.getElementById('test-passes').className = 'fa fa-check text-success';
+          document.getElementById('test-passes').className = successIndicator;
         } else {
-          document.getElementById('test-passes').className = 'fa fa-times text-danger';
+          document.getElementById('test-passes').className = failureIndicator;
         }
         outputString = '';
       })
       .catch(err => {
-        document.getElementById('test-validated').className = 'fa fa-times text-danger';
+        document.getElementById('test-validated').className = failureIndicator;
+        document.getElementById('test-passes').className = notrunIndicator;
         outputBody.textContent = err;
       });
+  } else {
+    document.getElementById('test-validated').className = notrunIndicator;
   }
   lastTest = test; // save for run again button
 };
