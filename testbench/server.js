@@ -5,8 +5,8 @@ const fs = require('fs');
 const express = require('express');
 
 const server = express();
-// const testPath = '../tests/';
-const testPath = '../handcoded/';
+const testPath = '../tests/';
+// const testPath = '../handcoded/';
 
 server.get('/tests/:file', function(req, res) {
   if (/wasm$/.exec(req.params.file)) {

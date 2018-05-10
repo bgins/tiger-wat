@@ -1,1 +1,10 @@
+*.wat
+*.wasm
+
+# javascript
 node_modules/
+
+# python
+.idea/
+venv/
+__pycache__
