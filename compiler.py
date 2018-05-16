@@ -29,7 +29,7 @@ def declare_var(var, env):
     Add to environment and generate stack code.
     """
     locals = [l[0] for l in env['locals']]
-    if locals:
+    if locals and var.name in locals:
         label = locals.index(var.name)
         return comp(var.exp, env) + ['set_local $' + label]
     else:
@@ -53,21 +53,21 @@ def assign(assn, env):
     More needed to handle strings.
     """
     locals = [l[0] for l in env['locals']]
-    if locals:
+    if locals and assn.lvalue.name in locals:
         label = locals.index(assn.lvalue.name)
         return (comp(assn.exp, env)[0] + ['set_local $' + str(label)], env)
     else:
-       die('variable not found')
+       die('variable ' + assn.lvalue.name + ' not found')
 
 
 def get_value(lval, env):
     """Get value for an lval"""
     locals = [l[0] for l in env['locals']]
-    if locals:
+    if locals and lval.name in locals:
         label = locals.index(lval.name)
         return (['get_local $' + str(label)], env)
     else:
-        die("variable not found")
+       die('variable ' + lval.name + ' not found')
 
 
 def get_type(ty):
@@ -97,8 +97,9 @@ def declare_function(func, env):
     param_string = ''
     for i in range(0, len(params)):
         param_string += '(param $' + str(i) + ' ' + params[i][1] + ') '
-    body = '\n    '.join(comp(func.body, { 'locals': params })[0])
-    env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + '(result ' + return_type + ')\n    ' + body + '\n  )')
+    body_env = { 'locals': env['locals'] + params, 'funcs': env['funcs'] }
+    body = '\n    '.join(comp(func.body, body_env)[0])
+    env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + '(result ' + return_type + ')\n    ' + body + ')')
     return ([], env)
 
 
@@ -126,6 +127,16 @@ def call(fc, env):
                 for param, arg in zip(params, fc.args):
                     if param[1] == 'i32' and arg.__class__ is IntegerValue:
                         args.extend(comp(arg, env)[0])
+                    elif param[1] == 'i32' and arg.__class__ is LValue:
+                        locals = [l[0] for l in env['locals']]
+                        if locals and arg.name in locals:
+                            label = locals.index(arg.name)
+                            if env['locals'][label][1] == 'i32':
+                                args.extend(comp(arg, env)[0])
+                            else:
+                                die('argument type of ' + param[0] + ' does not match' )
+                        else:
+                            die('argument ' + param[0] + ' not in scope')
                     else:
                         die('argument type of ' + param[0] + ' does not match' )
             return (args + ['call $' + fname ], env)
@@ -189,7 +200,7 @@ def compile_main(ast):
         'locals': []
     }
     main_body = '\n    '.join(comp(ast, env)[0])
-    func_main = '\n  (func $main (type $t1)\n    ' + main_body + '\n  )'
+    func_main = '\n  (func $main (type $t1)\n    ' + main_body + ')'
     return module[:-1] + types + imports + env['func_decs'] + func_main + exports + data + module[-1:]
 
 
