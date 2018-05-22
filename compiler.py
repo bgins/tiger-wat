@@ -31,7 +31,7 @@ def declare_var(var, env):
     locals = [l[0] for l in env['locals']]
     if locals and var.name in locals:
         label = locals.index(var.name)
-        return comp(var.exp, env) + ['set_local $' + label]
+        return comp(var.exp, env)[0] + ['set_local $' + str(label)]
     else:
         if var.type is None and var.exp.__class__ is IntegerValue:
             type_ = 'i32'
@@ -43,9 +43,8 @@ def declare_var(var, env):
             type_ = 'string'
         index = len(env['locals'])
         env['locals'].append( (var.name, type_) )
-        local_def = ['(local $' + str(index) + ' ' + type_ + ')']
         set_local = ['set_local $' + str(index)]
-        return (local_def + comp(var.exp, env)[0] + set_local, env)
+        return (comp(var.exp, env)[0] + set_local, env)
 
 
 def assign(assn, env):
@@ -97,9 +96,15 @@ def declare_function(func, env):
     param_string = ''
     for i in range(0, len(params)):
         param_string += '(param $' + str(i) + ' ' + params[i][1] + ') '
-    body_env = { 'locals': env['locals'] + params, 'funcs': env['funcs'] }
+    body_env = { 'locals': params, 'funcs': env['funcs'] }
+    # body_env = { 'locals': env['locals'] + params, 'funcs': env['funcs'] }
     body = '\n    '.join(comp(func.body, body_env)[0])
-    env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + '(result ' + return_type + ')\n    ' + body + ')')
+
+    locals_string = ''
+    for index in range(0, len(body_env['locals'])):
+        type_ = body_env['locals'][index][1]
+        locals_string += ('(local $' + str(index + len(params)) + ' ' + type_ + ')\n    ')
+    env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + '(result ' + return_type + ')\n    ' + locals_string + body + ')')
     return ([], env)
 
 
@@ -199,8 +204,12 @@ def compile_main(ast):
         'funcs': {},
         'locals': []
     }
-    main_body = '\n    '.join(comp(ast, env)[0])
-    func_main = '\n  (func $main (type $t1)\n    ' + main_body + ')'
+    main_body, main_env = comp(ast, env)
+    main_body_string = '\n    '.join(main_body)
+    locals_string = ''
+    for index in range(0, len(main_env['locals'])):
+        locals_string += '(local $' + str(index) + ' ' + main_env['locals'][index][1] + ')\n    '
+    func_main = '\n  (func $main (type $t1)\n    ' + locals_string + main_body_string + ')'
     return module[:-1] + types + imports + env['func_decs'] + func_main + exports + data + module[-1:]
 
 
