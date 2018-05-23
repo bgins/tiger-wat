@@ -22,7 +22,10 @@ data = r'''
 def die(err):
     print('Compilation failed: ' + err)
 
-def declare_var(var, env):
+
+# Variables
+
+def variable_declaration(var, env):
     """Declare a variable
     Check if variable already declared and replace it if so.
     Otherwise, determine the type and assign it the next index as a label.
@@ -59,7 +62,7 @@ def assign(assn, env):
        die('variable ' + assn.lvalue.name + ' not found')
 
 
-def get_value(lval, env):
+def lvalue(lval, env):
     """Get value for an lval"""
     locals = [l[0] for l in env['locals']]
     if locals and lval.name in locals:
@@ -69,17 +72,21 @@ def get_value(lval, env):
        die('variable ' + lval.name + ' not found')
 
 
-def get_type(ty):
+# Types
+
+def type_id(typeid, env):
     """Retrieve type from TypeId node
     Strings will need to be handled here as well
     """
-    if ty.name == 'int':
-        return 'i32'
+    if typeid.name == 'int':
+        return ('i32', env)
     else:
-        return ''
+        return ('', env)
 
 
-def declare_function(func, env):
+# Functions
+
+def function_declaration(func, env):
     """Declare a function
     Build up list of params as a list of tuples with name and type and return_type as a string
     Add function to environment.
@@ -108,7 +115,7 @@ def declare_function(func, env):
     return ([], env)
 
 
-def call(fc, env):
+def function_call(fc, env):
     """Call function
     Check if call is built-in print function.
     Otherwise, check if the function is defined, then check number of args and argument types (ints only for now)
@@ -149,6 +156,8 @@ def call(fc, env):
             die('function ' + fc.name + ' is not defined')
 
 
+# Blocks
+
 def sequence(expressions, env):
     """Compile each expression in a sequence
     Update environment with as we go.
@@ -158,6 +167,33 @@ def sequence(expressions, env):
         return (code + sequence(expressions[1:], next_env)[0], env)
     else:
         return ([], env)
+
+
+def let(let, env):
+    let_env = { 'func_decs': '', 'funcs': {}, 'locals': [] }
+    decls_code_string = ''
+    for decl in let.declarations:
+        decl_body, let_env = comp(decl, let_env)
+        if (decl_body != []):
+            decls_code_string += '\n    '.join(decl_body) + '\n    '
+
+    locals_string = ''
+    for index in range(0, len(let_env['locals'])):
+        type_ = let_env['locals'][index][1]
+        locals_string += ('(local $' + str(index) + ' ' + type_ + ')\n    ')
+
+    # can we have more than one expression?
+    # body = '\n    '.join(comp(let.expressions, let_env)[0])
+    in_code_string = '\n    '.join(comp(let.expressions[0], let_env)[0])
+
+    label = str(env['lets'])
+    env['let_decs'] += ('\n  (func $let' + label + '\n    ' + locals_string + decls_code_string + in_code_string + ')')
+    env['lets'] = env['lets'] + 1
+
+    env['func_decs'] = let_env['func_decs'] + env['func_decs']
+    return (['call $let' + label], env)
+
+
 
 # TODO: check if unsigned integer instructions are needed
 emit = {
@@ -175,15 +211,18 @@ emit = {
     GreaterThanOrEquals: lambda ge, env: (comp(ge.left, env)[0] + comp(ge.right, env)[0] + ['i32.ge_s'], env),
     And: lambda and_, env: (comp(and_.left, env)[0] + comp(and_.right, env)[0] + ['i32.and'], env),
     Or: lambda or_, env: (comp(or_.left, env)[0] + comp(or_.right, env)[0] + ['i32.or'], env),
-    VariableDeclaration: lambda var, env: declare_var(var, env),
+    VariableDeclaration: lambda var, env: variable_declaration(var, env),
     Assign: lambda assn, env: assign(assn, env),
-    LValue: lambda lval, env: get_value(lval, env),
-    TypeId: lambda ty, env: (get_type(ty), env),
-    FunctionDeclaration: lambda func, env: declare_function(func, env),
-    FunctionCall: lambda fc, env: call(fc, env),
-    Sequence: lambda seq, env: sequence(seq.expressions, env)
+    LValue: lambda lval, env: lvalue(lval, env),
+    TypeId: lambda typeid, env: type_id(typeid, env),
+    FunctionDeclaration: lambda func, env: function_declaration(func, env),
+    FunctionCall: lambda fc, env: function_call(fc, env),
+    Sequence: lambda seq, env: sequence(seq.expressions, env),
+    Let: lambda l, env: let(l, env)
 }
 
+
+# Compilation
 
 def comp(ast, env):
     """Generate code from AST updating the environment as we go"""
@@ -200,6 +239,8 @@ def compile_main(ast):
     env = {
         # types: [],
         'func_decs': '',
+        'let_decs': '',
+        'lets': 0,
         # datatypes: {},
         'funcs': {},
         'locals': []
@@ -210,7 +251,7 @@ def compile_main(ast):
     for index in range(0, len(main_env['locals'])):
         locals_string += '(local $' + str(index) + ' ' + main_env['locals'][index][1] + ')\n    '
     func_main = '\n  (func $main (type $t1)\n    ' + locals_string + main_body_string + ')'
-    return module[:-1] + types + imports + env['func_decs'] + func_main + exports + data + module[-1:]
+    return module[:-1] + types + imports + env['func_decs'] + env['let_decs'] + func_main + exports + data + module[-1:]
 
 
 if __name__ == '__main__':
