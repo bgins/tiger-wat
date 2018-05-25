@@ -224,7 +224,7 @@ def for_(for_, env):
     termination = comp(for_.end, env)[0]
     set_termination = ['set_local $' + str(t_index)]
 
-    for_body, for_env = comp(for_.body, env)
+    for_body = comp(for_.body, env)[0]
 
     increment = ['get_local $' + str(i_index), 'i32.const 1', 'i32.add', 'set_local $' + str(i_index)]
     test = ['get_local $' + str(i_index), 'get_local $' + str(t_index), 'i32.le_s', 'br_if 0']
@@ -233,6 +233,13 @@ def for_(for_, env):
     loop_body = ['  ' + op for op in for_body + increment + test]
 
     return (loop_init + ['loop'] + loop_body + ['end'], env)
+
+
+def while_(while_, env):
+    while_body = comp(while_.body, env)[0]
+    test = comp(while_.condition, env)[0] + ['br_if 0']
+    loop_body = ['  ' + op for op in while_body + test]
+    return (['loop'] + loop_body + ['end'], env)
 
 
 # TODO: check if unsigned integer instructions are needed
@@ -259,7 +266,8 @@ emit = {
     FunctionCall: lambda fc, env: function_call(fc, env),
     Sequence: lambda seq, env: sequence(seq.expressions, env),
     Let: lambda l, env: let(l, env),
-    For: lambda f, env: for_(f, env)
+    For: lambda f, env: for_(f, env),
+    While: lambda w, env: while_(w, env)
 }
 
 
