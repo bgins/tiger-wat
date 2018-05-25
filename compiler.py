@@ -86,6 +86,7 @@ def type_id(typeid, env):
 
 # Functions
 
+# TODO: add return when appropriate
 def function_declaration(func, env):
     """Declare a function
     Build up list of params as a list of tuples with name and type and return_type as a string
@@ -98,20 +99,31 @@ def function_declaration(func, env):
     for i in range(0, len(param_names)):
         params.append( (param_names[i], comp(func.parameters[param_names[i]], env)[0]) )
     return_type = comp(func.return_type, env)[0]
+
     env['funcs'][func.name] = { 'params': params, 'return_type': return_type }
 
     param_string = ''
     for i in range(0, len(params)):
         param_string += '(param $' + str(i) + ' ' + params[i][1] + ') '
+
+    if return_type:
+        result_string = '(result ' + return_type + ')\n    '
+        return_string = '\n    return'
+    else:
+        result_string = ''
+        return_string = ''
+
     body_env = { 'locals': params, 'funcs': env['funcs'] }
     # body_env = { 'locals': env['locals'] + params, 'funcs': env['funcs'] }
-    body = '\n    '.join(comp(func.body, body_env)[0])
-
     locals_string = ''
     for index in range(0, len(body_env['locals'])):
         type_ = body_env['locals'][index][1]
         locals_string += ('(local $' + str(index + len(params)) + ' ' + type_ + ')\n    ')
-    env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + '(result ' + return_type + ')\n    ' + locals_string + body + ')')
+    body = '\n    '.join(comp(func.body, body_env)[0])
+
+    # env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + '(result ' + return_type + ')\n    ' + locals_string + body + ')')
+    # env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + result_string + locals_string + body + ')')
+    env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + result_string + locals_string + body + return_string + ')')
     return ([], env)
 
 
@@ -177,14 +189,20 @@ def let(let, env):
         if (decl_body != []):
             decls_code_string += '\n    '.join(decl_body) + '\n    '
 
+    # can we have more than one expression?
+    # body = '\n    '.join(comp(let.expressions, let_env)[0])
+    # in_code_string = '\n    '.join(comp(let.expressions[0], let_env)[0])
+    in_code_string = ''
+    for expr in let.expressions:
+        expr_body, let_env = comp(expr, let_env)
+        if (expr_body != []):
+            # in_code_string += '\n    '.join(expr_body) + '\n    '
+            in_code_string += '\n    '.join(expr_body)
+
     locals_string = ''
     for index in range(0, len(let_env['locals'])):
         type_ = let_env['locals'][index][1]
         locals_string += ('(local $' + str(index) + ' ' + type_ + ')\n    ')
-
-    # can we have more than one expression?
-    # body = '\n    '.join(comp(let.expressions, let_env)[0])
-    in_code_string = '\n    '.join(comp(let.expressions[0], let_env)[0])
 
     label = str(env['lets'])
     env['let_decs'] += ('\n  (func $let' + label + '\n    ' + locals_string + decls_code_string + in_code_string + ')')
@@ -193,6 +211,28 @@ def let(let, env):
     env['func_decs'] = let_env['func_decs'] + env['func_decs']
     return (['call $let' + label], env)
 
+# Structured control flow
+
+def for_(for_, env):
+    i_index = len(env['locals'])
+    env['locals'].append( (for_.var, 'i32') )
+    initial = comp(for_.start, env)[0]
+    set_initial = ['set_local $' + str(i_index)]
+
+    t_index = len(env['locals'])
+    env['locals'].append( (for_.var + '_t', 'i32') )
+    termination = comp(for_.end, env)[0]
+    set_termination = ['set_local $' + str(t_index)]
+
+    for_body, for_env = comp(for_.body, env)
+
+    increment = ['get_local $' + str(i_index), 'i32.const 1', 'i32.add', 'set_local $' + str(i_index)]
+    test = ['get_local $' + str(i_index), 'get_local $' + str(t_index), 'i32.le_s', 'br_if 0']
+
+    loop_init = initial + set_initial + termination + set_termination
+    loop_body = ['  ' + op for op in for_body + increment + test]
+
+    return (loop_init + ['loop'] + loop_body + ['end'], env)
 
 
 # TODO: check if unsigned integer instructions are needed
@@ -218,7 +258,8 @@ emit = {
     FunctionDeclaration: lambda func, env: function_declaration(func, env),
     FunctionCall: lambda fc, env: function_call(fc, env),
     Sequence: lambda seq, env: sequence(seq.expressions, env),
-    Let: lambda l, env: let(l, env)
+    Let: lambda l, env: let(l, env),
+    For: lambda f, env: for_(f, env)
 }
 
 

@@ -12,7 +12,7 @@ const notrunIndicator = 'fa fa-circle-thin fa-fw';
 const successIndicator = 'fa fa-check text-success fa-fw';
 const failureIndicator = 'fa fa-times text-danger fa-fw';
 
-var outputString = '';
+var output = '';
 var lastTest = '';
 
 const resetUI = () => {
@@ -29,8 +29,12 @@ const importObject = {
       initial: 10,
       maximum: 100
     }),
-    // print_int: arg => outputString += arg + '\n'
-    print: arg => outputString += arg + '\n'
+    // print: arg => outputString += arg + '\n'
+    // print: arg => outputBody.appendChild(document.createTextNode(arg + '\n'))
+    print: arg => {
+      output += arg + '\n';
+      outputBody.appendChild(document.createTextNode(arg + '\n'));
+    }
   }
 };
 
@@ -97,16 +101,20 @@ const fetchWasm = async (test) => {
     WebAssembly.instantiateStreaming(fetch('tests/' + test + '.wasm'), importObject)
       .then(async wasmObject => {
         document.getElementById('test-validated').className = successIndicator;
+
+        outputBody.textContent = 'actual:\n';
+        output = '';
         wasmObject.instance.exports.main();
-        outputBody.textContent = 'actual:\n' + outputString;
+        // outputBody.textContent = 'actual:\n' + outputString;
+
         var expected = await fetchExpected(test, 'out.bak');
         expectedBody.textContent = 'expected:\n' + expected;
-        if (expected === outputString) {
+        // if (expected === outputString) {
+        if (expected === output) {
           document.getElementById('test-passes').className = successIndicator;
         } else {
           document.getElementById('test-passes').className = failureIndicator;
         }
-        outputString = '';
       })
       .catch(err => {
         document.getElementById('test-validated').className = failureIndicator;
@@ -129,7 +137,8 @@ function runTest(test) {
 
 // attach click handlers to test menu entries
 var tests = ['int', 'add', 'subtract', 'multiply', 'divide', 'lt', 'gt', 'eq', 'ne', 'le', 'ge',
-  'and', 'or', 'locals', 'assign', 'seq', 'funcdec', 'funcs', 'letvar', 'letfuncs', 'letfunchain'
+  'and', 'or', 'locals', 'assign', 'seq', 'funcdec', 'funcs', 'letvar', 'letvars', 'letfunc',
+  'letfuncs', 'letfunchain', 'for'
 ];
 
 jQuery('#test-selection')
