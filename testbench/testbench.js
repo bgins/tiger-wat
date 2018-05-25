@@ -72,7 +72,7 @@ const fetchSource = (test, filetype, indicator) => {
 
 const fetchTiger = async (test) => {
   tigerHeader.textContent = test + '.tig';
-  var tiger = await fetchSource(test, 'tig', 'test-implemented');
+  var tiger = await fetchSource(test, 'tig', 'tiger-implemented');
   tigerBody.textContent = tiger.result;
   return tiger.success;
 };
@@ -81,11 +81,11 @@ const fetchWat = async (test) => {
   var tigerSuccess = await fetchTiger(test);
   watHeader.textContent = test + '.wat';
   if (tigerSuccess === true) {
-    var wat = await fetchSource(test, 'wat', 'test-generated');
+    var wat = await fetchSource(test, 'wat', 'wat-compiled');
     watBody.textContent = wat.result;
     return wat.success;
   } else {
-    document.getElementById('test-generated').className = notrunIndicator;
+    document.getElementById('wat-compiled').className = notrunIndicator;
     return false;
   }
 };
@@ -100,7 +100,7 @@ const fetchWasm = async (test) => {
   if (watSuccess === true) {
     WebAssembly.instantiateStreaming(fetch('tests/' + test + '.wasm'), importObject)
       .then(async wasmObject => {
-        document.getElementById('test-validated').className = successIndicator;
+        document.getElementById('wasm-generated').className = successIndicator;
 
         outputBody.textContent = 'actual:\n';
         output = '';
@@ -117,12 +117,12 @@ const fetchWasm = async (test) => {
         }
       })
       .catch(err => {
-        document.getElementById('test-validated').className = failureIndicator;
+        document.getElementById('wasm-generated').className = failureIndicator;
         document.getElementById('test-passes').className = notrunIndicator;
         outputBody.textContent = err;
       });
   } else {
-    document.getElementById('test-validated').className = notrunIndicator;
+    document.getElementById('wasm-generated').className = notrunIndicator;
     document.getElementById('test-passes').className = notrunIndicator;
   }
   lastTest = test; // save for run again button
