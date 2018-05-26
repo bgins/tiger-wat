@@ -10,8 +10,9 @@ module = '(module)'
 types = '''
   (type $t0 (func (param i32)))
   (type $t1 (func))'''
+memory = '''
+  (import "env" "memory" (memory $0 1))'''
 imports = '''
-  (import "env" "memory" (memory $0 1))
   (import "env" "print" (func $print (type $t0)))'''
 exports = '''
   (export "main" (func $main))'''
@@ -292,7 +293,8 @@ def compile_main(ast):
         'lets': 0,
         # datatypes: {},
         'funcs': {},
-        'locals': []
+        'locals': [],
+        'memory': False
     }
     main_body, main_env = comp(ast, env)
     main_body_string = '\n    '.join(main_body)
@@ -300,7 +302,10 @@ def compile_main(ast):
     for index in range(0, len(main_env['locals'])):
         locals_string += '(local $' + str(index) + ' ' + main_env['locals'][index][1] + ')\n    '
     func_main = '\n  (func $main (type $t1)\n    ' + locals_string + main_body_string + ')'
-    return module[:-1] + types + imports + env['func_decs'] + env['let_decs'] + func_main + exports + data + module[-1:]
+    if env['memory']:
+        return module[:-1] + types + memory + imports + env['func_decs'] + env['let_decs'] + func_main + exports + data + module[-1:]
+    else:
+        return module[:-1] + types + imports + env['func_decs'] + env['let_decs'] + func_main + exports + module[-1:]
 
 
 if __name__ == '__main__':
