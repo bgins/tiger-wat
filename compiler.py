@@ -23,6 +23,9 @@ data = r'''
 def die(err):
     print('Compilation failed: ' + err)
 
+def set_int_return(env):
+    env['return_type'] = 'i32'
+    return env
 
 # Variables
 
@@ -68,6 +71,8 @@ def lvalue(lval, env):
     locals = [l[0] for l in env['locals']]
     if locals and lval.name in locals:
         label = locals.index(lval.name)
+        type_ = env['locals'][label][1]
+        env['return_type'] = type_
         return (['get_local $' + str(label)], env)
     else:
        die('variable ' + lval.name + ' not found')
@@ -135,14 +140,16 @@ def function_call(fc, env):
     Generate code if everything checks out.
     """
     if fc.name == 'print':
-        return (comp(fc.args[0], env)[0] + ['call $print'], env)
+        func_body = comp(fc.args[0], env)[0]
+        env['return_type'] = None
+        return (func_body + ['call $print'], env)
+        # return (comp(fc.args[0], env)[0] + ['call $print'], env)
     else:
         fnames = list(env['funcs'])
-        match = list(filter(lambda f: f == fc.name, fnames))
-        if match:
-            fname = match[0]
-            func = env['funcs'][fname]
+        if fnames and fc.name in fnames:
+            func = env['funcs'][fc.name]
             params = func['params']
+            return_type = func['return_type']
             if len(fc.args) < len(params):
                 die('call to ' + fc.name + ' does not have enough arguments')
             elif len(fc.args) > len(params):
@@ -164,7 +171,8 @@ def function_call(fc, env):
                             die('argument ' + param[0] + ' not in scope')
                     else:
                         die('argument type of ' + param[0] + ' does not match' )
-            return (args + ['call $' + fname ], env)
+            env['return_type'] = return_type
+            return (args + ['call $' + fc.name ], env)
         else:
             die('function ' + fc.name + ' is not defined')
 
@@ -177,6 +185,7 @@ def sequence(expressions, env):
     """
     if expressions:
         code, next_env = comp(expressions[0], env)
+        env['return_type'] = next_env['return_type']
         return (code + sequence(expressions[1:], next_env)[0], env)
     else:
         return ([], env)
@@ -200,6 +209,7 @@ def let(let, env):
             # in_code_string += '\n    '.join(expr_body) + '\n    '
             in_code_string += '\n    '.join(expr_body)
 
+
     locals_string = ''
     for index in range(0, len(let_env['locals'])):
         type_ = let_env['locals'][index][1]
@@ -210,6 +220,8 @@ def let(let, env):
     env['lets'] = env['lets'] + 1
 
     env['func_decs'] = let_env['func_decs'] + env['func_decs']
+
+    env['return_type'] = let_env['return_type']
     return (['call $let' + label], env)
 
 # Structured control flow
@@ -233,6 +245,9 @@ def for_(for_, env):
     loop_init = initial + set_initial + termination + set_termination
     loop_body = ['  ' + op for op in for_body + increment + test]
 
+    if env['return_type'] is not None:
+        die('expression in for cannot return a value')
+
     return (loop_init + ['loop'] + loop_body + ['end'], env)
 
 
@@ -240,25 +255,27 @@ def while_(while_, env):
     while_body = comp(while_.body, env)[0]
     test = comp(while_.condition, env)[0] + ['br_if 0']
     loop_body = ['  ' + op for op in while_body + test]
+    if env['return_type'] is not None:
+        die('expression in while cannot return a value')
     return (['loop'] + loop_body + ['end'], env)
 
 
 # TODO: check if unsigned integer instructions are needed
 emit = {
-    IntegerValue: lambda intval, env: (['i32.const ' +  str(intval.integer)], env),
+    IntegerValue: lambda intval, env: (['i32.const ' +  str(intval.integer)], set_int_return(env)),
     # StringValue: lambda strval, env: ([''], env),
-    Add: lambda add, env: (comp(add.left, env)[0] + comp(add.right, env)[0] + ['i32.add'], env),
-    Subtract: lambda sub, env: (comp(sub.left, env)[0] + comp(sub.right, env)[0] + ['i32.sub'], env),
-    Multiply: lambda mul, env: (comp(mul.left, env)[0] + comp(mul.right, env)[0] + ['i32.mul'], env),
-    Divide: lambda div, env: (comp(div.left, env)[0] + comp(div.right, env)[0] + ['i32.div_s'], env),
-    Equals: lambda eq, env: (comp(eq.left, env)[0] + comp(eq.right, env)[0] + ['i32.eq'], env),
-    NotEquals: lambda ne, env: (comp(ne.left, env)[0] + comp(ne.right, env)[0] + ['i32.ne'], env),
-    LessThan: lambda lt, env: (comp(lt.left, env)[0] + comp(lt.right, env)[0] + ['i32.lt_s'], env),
-    GreaterThan: lambda gt, env: (comp(gt.left, env)[0] + comp(gt.right, env)[0] + ['i32.gt_s'], env),
-    LessThanOrEquals: lambda le, env: (comp(le.left, env)[0] + comp(le.right, env)[0] + ['i32.le_s'], env),
-    GreaterThanOrEquals: lambda ge, env: (comp(ge.left, env)[0] + comp(ge.right, env)[0] + ['i32.ge_s'], env),
-    And: lambda and_, env: (comp(and_.left, env)[0] + comp(and_.right, env)[0] + ['i32.and'], env),
-    Or: lambda or_, env: (comp(or_.left, env)[0] + comp(or_.right, env)[0] + ['i32.or'], env),
+    Add: lambda add, env: (comp(add.left, env)[0] + comp(add.right, env)[0] + ['i32.add'], set_int_return(env)),
+    Subtract: lambda sub, env: (comp(sub.left, env)[0] + comp(sub.right, env)[0] + ['i32.sub'], set_int_return(env)),
+    Multiply: lambda mul, env: (comp(mul.left, env)[0] + comp(mul.right, env)[0] + ['i32.mul'], set_int_return(env)),
+    Divide: lambda div, env: (comp(div.left, env)[0] + comp(div.right, env)[0] + ['i32.div_s'], set_int_return(env)),
+    Equals: lambda eq, env: (comp(eq.left, env)[0] + comp(eq.right, env)[0] + ['i32.eq'], set_int_return(env)),
+    NotEquals: lambda ne, env: (comp(ne.left, env)[0] + comp(ne.right, env)[0] + ['i32.ne'], set_int_return(env)),
+    LessThan: lambda lt, env: (comp(lt.left, env)[0] + comp(lt.right, env)[0] + ['i32.lt_s'], set_int_return(env)),
+    GreaterThan: lambda gt, env: (comp(gt.left, env)[0] + comp(gt.right, env)[0] + ['i32.gt_s'], set_int_return(env)),
+    LessThanOrEquals: lambda le, env: (comp(le.left, env)[0] + comp(le.right, env)[0] + ['i32.le_s'], set_int_return(env)),
+    GreaterThanOrEquals: lambda ge, env: (comp(ge.left, env)[0] + comp(ge.right, env)[0] + ['i32.ge_s'], set_int_return(env)),
+    And: lambda and_, env: (comp(and_.left, env)[0] + comp(and_.right, env)[0] + ['i32.and'], set_int_return(env)),
+    Or: lambda or_, env: (comp(or_.left, env)[0] + comp(or_.right, env)[0] + ['i32.or'], set_int_return(env)),
     VariableDeclaration: lambda var, env: variable_declaration(var, env),
     Assign: lambda assn, env: assign(assn, env),
     LValue: lambda lval, env: lvalue(lval, env),
@@ -294,6 +311,7 @@ def compile_main(ast):
         # datatypes: {},
         'funcs': {},
         'locals': [],
+        'return_type': None,
         'memory': False
     }
     main_body, main_env = comp(ast, env)
