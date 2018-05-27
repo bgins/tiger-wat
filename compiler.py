@@ -260,6 +260,30 @@ def while_(while_, env):
     return (['loop'] + loop_body + ['end'], env)
 
 
+def if_(if_, env):
+    condition = comp(if_.condition, env)[0]
+
+    body_if_true, if_env = comp(if_.body_if_true, env)
+    true_return_type = if_env['return_type']
+    if if_.body_if_false:
+        body_if_false, if_env = comp(if_.body_if_false, env)
+        false_return_type = if_env['return_type']
+    else:
+        body_if_false = ['nop']
+        false_return_type = None
+
+    if true_return_type == 'i32' and false_return_type == 'i32':
+        if_string = 'if (result i32)'
+    elif true_return_type == None and false_return_type == None:
+        if_string = 'if'
+    else:
+        die('arms of if-then-else do not match')
+
+    true_body = ['  ' + op for op in body_if_true]
+    false_body = ['  ' + op for op in body_if_false]
+
+    return(condition + [if_string] + true_body + ['else'] + false_body + ['end'], env)
+
 # TODO: check if unsigned integer instructions are needed
 emit = {
     IntegerValue: lambda intval, env: (['i32.const ' +  str(intval.integer)], set_int_return(env)),
@@ -285,7 +309,8 @@ emit = {
     Sequence: lambda seq, env: sequence(seq.expressions, env),
     Let: lambda l, env: let(l, env),
     For: lambda f, env: for_(f, env),
-    While: lambda w, env: while_(w, env)
+    While: lambda w, env: while_(w, env),
+    If: lambda i, env: if_(i, env)
 }
 
 

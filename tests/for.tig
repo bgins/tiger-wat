@@ -1,6 +1,3 @@
-let
-in
-  for i := 1 to 10 do
-    print(i)
-  end
+for i := 1 to 10 do
+  print(i)
 end
