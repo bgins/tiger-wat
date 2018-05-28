@@ -136,19 +136,32 @@ function runTest(test) {
 
 
 // attach click handlers to test menu entries
-var tests = ['int', 'add', 'subtract', 'multiply', 'divide', 'lt', 'gt', 'eq', 'ne', 'le', 'ge',
-  'and', 'or', 'locals', 'assign', 'seq', 'funcdec', 'funcs', 'letvar', 'letvars', 'letfunc',
-             'letfuncs', 'letfunchain', 'for', 'while', 'if', 'ifelse'
+var basicTests = ['int', 'add', 'subtract', 'multiply', 'divide', 'lt', 'gt', 'eq', 'ne', 'le', 'ge',
+  'and', 'or', 'locals', 'assign', 'seq', 'func', 'letvar', 'letfunc',
+  'for', 'while', 'if', 'ifelse'
 ];
+var integrationTests = ['funcs', 'letvars', 'letfuncs', 'letfunchain'];
 
-jQuery('#test-selection')
+
+jQuery('#basic')
   .find('a')
   .each((index, test) => {
     jQuery(test)
       .on('click', () => {
-        runTest(tests[index]);
+        runTest(basicTests[index]);
       });
   });
+
+jQuery('#integration')
+  .find('a')
+  .each((index, test) => {
+    jQuery(test)
+      .on('click', () => {
+        runTest(integrationTests[index]);
+      });
+  });
+
+
 
 jQuery('#run-again')
   .on('click', () => {

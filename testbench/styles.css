@@ -4,22 +4,28 @@ body {
 
 .card-body {
   font-family: 'Source Code Pro', monospace;
+  padding: 10px 20px;
 }
 
 #tiger-body {
-  min-height: 225px;
-  max-height: 225px;
+  min-height: 230px;
+  max-height: 230px;
 }
 
 #wat-body {
-  min-height: 415px;
-  max-height: 415px;
+  min-height: 425px;
+  max-height: 425px;
 }
 
 #output-body, #expected-body {
-  min-height: 700px;
+  min-height: 695px;
 }
 
-#test-selection {
-  min-height: 820px;
+#test-selectionTabContent {
+  font-size: 15px;
+  min-height: 787px;
+}
+
+.nav-link {
+  color: #495057;
 }

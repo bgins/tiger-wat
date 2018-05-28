@@ -7,6 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0" />
 
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.min.css" />
@@ -28,89 +29,116 @@
     <div class="row">
       <div class="col-md-2">
         <div class="card mb-3">
+
           <div class="card-header">
-            tests
+            <ul class="nav nav-tabs card-header-tabs" id="test-selectionTab" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" id="basic-tab" data-toggle="tab" href="#basic" role="tab" aria-controls="basic" aria-selected="true">basic</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="integration-tab" data-toggle="tab" href="#integration" role="tab" aria-controls="integration" aria-selected="false">integration</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="errors-tab" data-toggle="tab" href="#errors" role="tab" aria-controls="errors" aria-selected="false">errors</a>
+              </li>
+            </ul>
           </div>
-          <div class="card-body" id="test-selection">
-            <div class="list-group list-group-flush">
-              constants
-              <div class="list-group list-group-flush ml-2">
-                <a class="list-group-item-action" href="#">int</a>
-              </div>
-            </div>
-            <div class="list-group list-group-flush">
-              arithmetic
-              <div class="list-group list-group-flush ml-2">
-                <a class="list-group-item-action" href="#">add</a>
-                <a class="list-group-item-action" href="#">subtract</a>
-                <a class="list-group-item-action" href="#">multiply</a>
-                <a class="list-group-item-action" href="#">divide</a>
-              </div>
-            </div>
-            <div class="list-group list-group-flush">
-              comparison
-              <div class="list-group list-group-flush ml-2">
-                <a class="list-group-item-action" href="#">lt</a>
-                <a class="list-group-item-action" href="#">gt</a>
-                <a class="list-group-item-action" href="#">eq</a>
-                <a class="list-group-item-action" href="#">ne</a>
-                <a class="list-group-item-action" href="#">le</a>
-                <a class="list-group-item-action" href="#">ge</a>
-              </div>
-            </div>
-            <div class="list-group list-group-flush">
-              boolean
-              <div class="list-group list-group-flush ml-2">
-                <a class="list-group-item-action" href="#">and</a>
-                <a class="list-group-item-action" href="#">or</a>
-              </div>
+
+          <div class="card-body tab-content" id="test-selectionTabContent">
+            <div class="tab-pane active" id="basic" role="tabpanel" aria-labelledby="basic-tab">
               <div class="list-group list-group-flush">
-                locals
+                constants
                 <div class="list-group list-group-flush ml-2">
-                  <a class="list-group-item-action" href="#">locals</a>
-                  <a class="list-group-item-action" href="#">assign</a>
+                  <a class="list-group-item-action" href="#">int</a>
                 </div>
               </div>
               <div class="list-group list-group-flush">
-                sequence
+                arithmetic
                 <div class="list-group list-group-flush ml-2">
-                  <a class="list-group-item-action" href="#">seq</a>
+                  <a class="list-group-item-action" href="#">add</a>
+                  <a class="list-group-item-action" href="#">subtract</a>
+                  <a class="list-group-item-action" href="#">multiply</a>
+                  <a class="list-group-item-action" href="#">divide</a>
                 </div>
               </div>
               <div class="list-group list-group-flush">
-                funcs
+                comparison
                 <div class="list-group list-group-flush ml-2">
-                  <a class="list-group-item-action" href="#">funcdec</a>
+                  <a class="list-group-item-action" href="#">lt</a>
+                  <a class="list-group-item-action" href="#">gt</a>
+                  <a class="list-group-item-action" href="#">eq</a>
+                  <a class="list-group-item-action" href="#">ne</a>
+                  <a class="list-group-item-action" href="#">le</a>
+                  <a class="list-group-item-action" href="#">ge</a>
+                </div>
+              </div>
+              <div class="list-group list-group-flush">
+                boolean
+                <div class="list-group list-group-flush ml-2">
+                  <a class="list-group-item-action" href="#">and</a>
+                  <a class="list-group-item-action" href="#">or</a>
+                </div>
+                <div class="list-group list-group-flush">
+                  locals
+                  <div class="list-group list-group-flush ml-2">
+                    <a class="list-group-item-action" href="#">locals</a>
+                    <a class="list-group-item-action" href="#">assign</a>
+                  </div>
+                </div>
+                <div class="list-group list-group-flush">
+                  sequence
+                  <div class="list-group list-group-flush ml-2">
+                    <a class="list-group-item-action" href="#">seq</a>
+                  </div>
+                </div>
+                <div class="list-group list-group-flush">
+                  function
+                  <div class="list-group list-group-flush ml-2">
+                    <a class="list-group-item-action" href="#">func</a>
+                  </div>
+                </div>
+                <div class="list-group list-group-flush">
+                  lets
+                  <div class="list-group list-group-flush ml-2">
+                    <a class="list-group-item-action" href="#">letvar</a>
+                    <a class="list-group-item-action" href="#">letfunc</a>
+                  </div>
+                </div>
+                <div class="list-group list-group-flush">
+                  loops
+                  <div class="list-group list-group-flush ml-2">
+                    <a class="list-group-item-action" href="#">for</a>
+                    <a class="list-group-item-action" href="#">while</a>
+                  </div>
+                </div>
+                <div class="list-group list-group-flush">
+                  conditionals
+                  <div class="list-group list-group-flush ml-2">
+                    <a class="list-group-item-action" href="#">if</a>
+                    <a class="list-group-item-action" href="#">ifelse</a>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="tab-pane" id="integration" role="tabpanel" aria-labelledby="integration-tab">
+              <div class="list-group list-group-flush">
+                function
+                <div class="list-group list-group-flush ml-2">
                   <a class="list-group-item-action" href="#">funcs</a>
                 </div>
               </div>
               <div class="list-group list-group-flush">
-                lets
+                let
                 <div class="list-group list-group-flush ml-2">
-                  <a class="list-group-item-action" href="#">letvar</a>
                   <a class="list-group-item-action" href="#">letvars</a>
-                  <a class="list-group-item-action" href="#">letfunc</a>
                   <a class="list-group-item-action" href="#">letfuncs</a>
                   <a class="list-group-item-action" href="#">letfunchain</a>
                 </div>
               </div>
-              <div class="list-group list-group-flush">
-                loops
-                <div class="list-group list-group-flush ml-2">
-                  <a class="list-group-item-action" href="#">for</a>
-                  <a class="list-group-item-action" href="#">while</a>
-                </div>
-              </div>
-              <div class="list-group list-group-flush">
-                conditionals
-                <div class="list-group list-group-flush ml-2">
-                  <a class="list-group-item-action" href="#">if</a>
-                  <a class="list-group-item-action" href="#">ifelse</a>
-                </div>
-              </div>
-
-
             </div>
+            <div class="tab-pane" id="errors" role="tabpanel" aria-labelledby="errors-tab"></div>
           </div>
         </div>
       </div>
