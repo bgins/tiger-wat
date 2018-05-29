@@ -1,2 +1,3 @@
 (function add(a:int, b:int) : int = a + b;
- print(add(1,2))
+ var c : int := add(1,2);
+ print(c))

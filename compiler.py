@@ -120,9 +120,10 @@ def function_declaration(func, env):
     body_env = { 'locals': params, 'funcs': env['funcs'] }
     # body_env = { 'locals': env['locals'] + params, 'funcs': env['funcs'] }
     locals_string = ''
-    for index in range(0, len(body_env['locals'])):
+    for index in range(len(params), len(body_env['locals'])):
         type_ = body_env['locals'][index][1]
-        locals_string += ('(local $' + str(index + len(params)) + ' ' + type_ + ')\n    ')
+        locals_string += ('(local $' + str(index) + ' ' + type_ + ')\n    ')
+
     body = '\n    '.join(comp(func.body, body_env)[0])
 
     env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + result_string + locals_string + body + return_string + ')')
