@@ -137,10 +137,10 @@ function runTest(test) {
 
 // attach click handlers to test menu entries
 var basicTests = ['int', 'add', 'subtract', 'multiply', 'divide', 'lt', 'gt', 'eq', 'ne', 'le', 'ge',
-  'and', 'or', 'locals', 'assign', 'seq', 'func', 'letvar', 'letfunc',
+  'and', 'or', 'var', 'assign', 'seq', 'func', 'letvar', 'letfunc',
   'for', 'while', 'if', 'ifelse'
 ];
-var integrationTests = ['funcs', 'letvars', 'letfuncs', 'letfunchain'];
+var integrationTests = ['funcs', 'letvars', 'letfuncs', 'letfunchain', 'letnested'];
 
 
 jQuery('#basic')

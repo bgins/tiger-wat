@@ -27,6 +27,7 @@ def set_int_return(env):
     env['return_type'] = 'i32'
     return env
 
+
 # Variables
 
 def variable_declaration(var, env):
@@ -36,22 +37,18 @@ def variable_declaration(var, env):
     Add to environment and generate stack code.
     """
     locals = [l[0] for l in env['locals']]
-    if locals and var.name in locals:
-        label = locals.index(var.name)
-        return comp(var.exp, env)[0] + ['set_local $' + str(label)]
+    if var.type is None and var.exp.__class__ is IntegerValue:
+        type_ = 'i32'
+    # elif var.type is None and var.exp.__class__ is StringValue:
+        # type_ = 'string'
+    elif var.type.name == 'int':
+        type_ = 'i32'
     else:
-        if var.type is None and var.exp.__class__ is IntegerValue:
-            type_ = 'i32'
-        # elif var.type is None and var.exp.__class__ is StringValue:
-            # type_ = 'string'
-        elif var.type.name == 'int':
-            type_ = 'i32'
-        else:
-            type_ = 'string'
-        index = len(env['locals'])
-        env['locals'].append( (var.name, type_) )
-        set_local = ['set_local $' + str(index)]
-        return (comp(var.exp, env)[0] + set_local, env)
+        type_ = 'string'
+    index = len(env['locals'])
+    env['locals'].append( (var.name, type_) )
+    set_local = ['set_local $' + str(index)]
+    return (comp(var.exp, env)[0] + set_local, env)
 
 
 def assign(assn, env):
@@ -70,7 +67,8 @@ def lvalue(lval, env):
     """Get value for an lval"""
     locals = [l[0] for l in env['locals']]
     if locals and lval.name in locals:
-        label = locals.index(lval.name)
+        labels = [i for i, x in enumerate(locals) if x == lval.name]
+        label = labels[-1]
         type_ = env['locals'][label][1]
         env['return_type'] = type_
         return (['get_local $' + str(label)], env)
@@ -127,8 +125,6 @@ def function_declaration(func, env):
         locals_string += ('(local $' + str(index + len(params)) + ' ' + type_ + ')\n    ')
     body = '\n    '.join(comp(func.body, body_env)[0])
 
-    # env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + '(result ' + return_type + ')\n    ' + locals_string + body + ')')
-    # env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + result_string + locals_string + body + ')')
     env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + result_string + locals_string + body + return_string + ')')
     return ([], env)
 
@@ -143,7 +139,6 @@ def function_call(fc, env):
         func_body = comp(fc.args[0], env)[0]
         env['return_type'] = None
         return (func_body + ['call $print'], env)
-        # return (comp(fc.args[0], env)[0] + ['call $print'], env)
     else:
         fnames = list(env['funcs'])
         if fnames and fc.name in fnames:
@@ -192,16 +187,17 @@ def sequence(expressions, env):
 
 
 def let(let, env):
-    let_env = { 'func_decs': '', 'funcs': {}, 'locals': [] }
+    env_locals_len = len(env['locals'])
+    let_env = { 'funcs': {}, 'locals': [] }
+
     decls_code_string = ''
     for decl in let.declarations:
-        decl_body, let_env = comp(decl, let_env)
+        decl_body, let_env = comp(decl, env)
         if (decl_body != []):
             decls_code_string += '\n    '.join(decl_body) + '\n    '
 
+
     # can we have more than one expression?
-    # body = '\n    '.join(comp(let.expressions, let_env)[0])
-    # in_code_string = '\n    '.join(comp(let.expressions[0], let_env)[0])
     in_code_string = ''
     for expr in let.expressions:
         expr_body, let_env = comp(expr, let_env)
@@ -209,20 +205,14 @@ def let(let, env):
             # in_code_string += '\n    '.join(expr_body) + '\n    '
             in_code_string += '\n    '.join(expr_body)
 
-
-    locals_string = ''
-    for index in range(0, len(let_env['locals'])):
-        type_ = let_env['locals'][index][1]
-        locals_string += ('(local $' + str(index) + ' ' + type_ + ')\n    ')
-
-    label = str(env['lets'])
-    env['let_decs'] += ('\n  (func $let' + label + '\n    ' + locals_string + decls_code_string + in_code_string + ')')
-    env['lets'] = env['lets'] + 1
-
-    env['func_decs'] = let_env['func_decs'] + env['func_decs']
+    # add locals, but blot them out to put them out of scope
+    env['locals'] = let_env['locals']
+    for index in range(env_locals_len, len(let_env['locals'])):
+        env['locals'][index] = ('', env['locals'][index][1])
 
     env['return_type'] = let_env['return_type']
-    return (['call $let' + label], env)
+    return ([decls_code_string + in_code_string], env)
+
 
 # Structured control flow
 
@@ -331,8 +321,6 @@ def compile_main(ast):
     env = {
         # types: [],
         'func_decs': '',
-        'let_decs': '',
-        'lets': 0,
         # datatypes: {},
         'funcs': {},
         'locals': [],
@@ -346,9 +334,9 @@ def compile_main(ast):
         locals_string += '(local $' + str(index) + ' ' + main_env['locals'][index][1] + ')\n    '
     func_main = '\n  (func $main (type $t1)\n    ' + locals_string + main_body_string + ')'
     if env['memory']:
-        return module[:-1] + types + memory + imports + env['func_decs'] + env['let_decs'] + func_main + exports + data + module[-1:]
+        return module[:-1] + types + memory + imports + env['func_decs'] + func_main + exports + data + module[-1:]
     else:
-        return module[:-1] + types + imports + env['func_decs'] + env['let_decs'] + func_main + exports + module[-1:]
+        return module[:-1] + types + imports + env['func_decs'] + func_main + exports + module[-1:]
 
 
 if __name__ == '__main__':
