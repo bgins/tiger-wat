@@ -20,8 +20,17 @@ data = r'''
   (data 0 (offset (i32.const 4)) "\20\27\00\00")
 '''
 
-def die(err):
-    print('Compilation failed: ' + err)
+# def die(err):
+#     print('Compilation failed: ' + err)
+
+def die(err, outpath):
+    print(outpath)
+    err_message = 'Compilation failed: ' + err
+    outfile = open(outpath, 'w')
+    outfile.write(err_message)
+    outfile.close()
+    print(err_message)
+    sys.exit()
 
 def set_int_return(env):
     env['return_type'] = 'i32'
@@ -60,7 +69,7 @@ def assign(assn, env):
         label = locals.index(assn.lvalue.name)
         return (comp(assn.exp, env)[0] + ['set_local $' + str(label)], env)
     else:
-       die('variable ' + assn.lvalue.name + ' not found')
+       die('variable ' + assn.lvalue.name + ' not found', env['outpath'])
 
 
 def lvalue(lval, env):
@@ -73,7 +82,7 @@ def lvalue(lval, env):
         env['return_type'] = type_
         return (['get_local $' + str(label)], env)
     else:
-       die('variable ' + lval.name + ' not found')
+       die('variable ' + lval.name + ' not found', env['outpath'])
 
 
 # Types
@@ -147,9 +156,9 @@ def function_call(fc, env):
             params = func['params']
             return_type = func['return_type']
             if len(fc.args) < len(params):
-                die('call to ' + fc.name + ' does not have enough arguments')
+                die('call to ' + fc.name + ' does not have enough arguments', env['outpath'])
             elif len(fc.args) > len(params):
-                die('call to ' + fc.name + ' has too many arguments')
+                die('call to ' + fc.name + ' has too many arguments', env['outpath'])
             else:
                 args = []
                 for param, arg in zip(params, fc.args):
@@ -162,15 +171,15 @@ def function_call(fc, env):
                             if env['locals'][label][1] == 'i32':
                                 args.extend(comp(arg, env)[0])
                             else:
-                                die('argument type of ' + param[0] + ' does not match' )
+                                die('argument type of ' + param[0] + ' does not match', env['outpath'])
                         else:
-                            die('argument ' + param[0] + ' not in scope')
+                            die('argument ' + param[0] + ' not in scope', env['outpath'])
                     else:
-                        die('argument type of ' + param[0] + ' does not match' )
+                        die('argument type of ' + param[0] + ' does not match', env['outpath'])
             env['return_type'] = return_type
             return (args + ['call $' + fc.name ], env)
         else:
-            die('function ' + fc.name + ' is not defined')
+            die('function ' + fc.name + ' is not defined', env['outpath'])
 
 
 # Blocks
@@ -237,7 +246,7 @@ def for_(for_, env):
     loop_body = ['  ' + op for op in for_body + increment + test]
 
     if env['return_type'] is not None:
-        die('expression in for cannot return a value')
+        die('expression in for cannot return a value', env['outpath'])
 
     return (loop_init + ['loop'] + loop_body + ['end'], env)
 
@@ -247,7 +256,7 @@ def while_(while_, env):
     test = comp(while_.condition, env)[0] + ['br_if 0']
     loop_body = ['  ' + op for op in while_body + test]
     if env['return_type'] is not None:
-        die('expression in while cannot return a value')
+        die('expression in while cannot return a value', env['outpath'])
     return (['loop'] + loop_body + ['end'], env)
 
 
@@ -268,7 +277,7 @@ def if_(if_, env):
     elif true_return_type == None and false_return_type == None:
         if_string = 'if'
     else:
-        die('arms of if-then-else do not match')
+        die('arms of if-then-else do not match', env['outpath'])
 
     true_body = ['  ' + op for op in body_if_true]
     false_body = ['  ' + op for op in body_if_false]
@@ -313,13 +322,15 @@ def comp(ast, env):
     return (code, next_env)
 
 
-def compile_main(ast):
+# def compile_main(ast):
+def compile_main(ast, outpath):
     """Compile main function
     This function provides a wrapper for the program to allow it to be called by a main function.
     Module level code such function declarations and types are collected at this level,
     and code text is assembled here including imports, exports, and code to set up memory.
     """
     env = {
+        'outpath': outpath,
         # types: [],
         'func_decs': '',
         # datatypes: {},
@@ -341,12 +352,15 @@ def compile_main(ast):
 
 
 if __name__ == '__main__':
-    test_path = os.path.join("tests", sys.argv[1])
-    with open(test_path, 'r') as tiger_file:
+    testpath = os.path.join("tests", sys.argv[1])
+    with open(testpath, 'r') as tiger_file:
         tiger_source = tiger_file.read()
         ast = Parser(tiger_source).parse()
         print(ast)
-        module = compile_main(ast)
-        outfile = open(test_path[:-4] + '.wat', 'w')
+        # module = compile_main(ast)
+        outpath = testpath[:-4] + '.wat'
+        module = compile_main(ast, outpath)
+        # outfile = open(test_path[:-4] + '.wat', 'w')
+        outfile = open(outpath, 'w')
         outfile.write(module)
         outfile.close()

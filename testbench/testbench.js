@@ -15,6 +15,7 @@ const failureIndicator = 'fa fa-times text-danger fa-fw';
 var output = '';
 var lastTest = '';
 
+
 const resetUI = () => {
   tigerBody.textContent = '';
   watBody.textContent = '';
@@ -29,8 +30,6 @@ const importObject = {
       initial: 10,
       maximum: 100
     }),
-    // print: arg => outputString += arg + '\n'
-    // print: arg => outputBody.appendChild(document.createTextNode(arg + '\n'))
     print: arg => {
       output += arg + '\n';
       outputBody.appendChild(document.createTextNode(arg + '\n'));
@@ -39,7 +38,7 @@ const importObject = {
 };
 
 
-const fetchSource = (test, filetype, indicator) => {
+const fetchSource = (test, filetype) => {
   return fetch('tests/' + test + '.' + filetype)
     .then(response => {
       if (response.ok) {
@@ -48,9 +47,6 @@ const fetchSource = (test, filetype, indicator) => {
       throw test + '.' + filetype + ' not found';
     })
     .then(response => {
-      if (indicator !== undefined) {
-        document.getElementById(indicator).className = successIndicator;
-      }
       return response.text();
     })
     .then(result => {
@@ -60,9 +56,6 @@ const fetchSource = (test, filetype, indicator) => {
       };
     })
     .catch(err => {
-      if (indicator !== undefined) {
-        document.getElementById(indicator).className = failureIndicator;
-      }
       return {
         success: false,
         result: err
@@ -70,30 +63,41 @@ const fetchSource = (test, filetype, indicator) => {
     });
 };
 
+
 const fetchTiger = async (test) => {
   tigerHeader.textContent = test + '.tig';
-  var tiger = await fetchSource(test, 'tig', 'tiger-implemented');
+  var tiger = await fetchSource(test, 'tig');
+  document.getElementById('tiger-implemented').className = successIndicator;
   tigerBody.textContent = tiger.result;
   return tiger.success;
 };
+
 
 const fetchWat = async (test) => {
   var tigerSuccess = await fetchTiger(test);
   watHeader.textContent = test + '.wat';
   if (tigerSuccess === true) {
-    var wat = await fetchSource(test, 'wat', 'wat-compiled');
+    var wat = await fetchSource(test, 'wat');
     watBody.textContent = wat.result;
-    return wat.success;
+    if (/failed/g.exec(wat.result)) {
+      document.getElementById('wat-compiled').className = failureIndicator;
+      return false;
+    } else {
+      document.getElementById('wat-compiled').className = successIndicator;
+      return wat.success;
+    }
   } else {
     document.getElementById('wat-compiled').className = notrunIndicator;
     return false;
   }
 };
 
+
 const fetchExpected = async (test) => {
   var expected = await fetchSource(test, 'out.bak');
   return expected.result;
 };
+
 
 const fetchWasm = async (test) => {
   var watSuccess = await fetchWat(test);
@@ -105,11 +109,9 @@ const fetchWasm = async (test) => {
         outputBody.textContent = 'actual:\n';
         output = '';
         wasmObject.instance.exports.main();
-        // outputBody.textContent = 'actual:\n' + outputString;
 
         var expected = await fetchExpected(test, 'out.bak');
         expectedBody.textContent = 'expected:\n' + expected;
-        // if (expected === outputString) {
         if (expected === output) {
           document.getElementById('test-passes').className = successIndicator;
         } else {

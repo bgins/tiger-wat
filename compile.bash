@@ -1,3 +1,6 @@
+rm tests/*.wat
+rm tests/*.wasm
+
 for i in tests/*.tig
 do
     FILE=$(echo $i | cut -c7-)
@@ -12,4 +15,3 @@ do
     echo "convert $i"
     ~/langs/wasm-spec/interpreter/wasm -d $i -o $NAME$WASM
 done
-
