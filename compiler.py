@@ -69,7 +69,7 @@ def assign(assn, env):
         label = locals.index(assn.lvalue.name)
         return (comp(assn.exp, env)[0] + ['set_local $' + str(label)], env)
     else:
-       die('variable ' + assn.lvalue.name + ' not found', env['outpath'])
+       die('variable ' + assn.lvalue.name + ' not declared', env['outpath'])
 
 
 def lvalue(lval, env):
@@ -82,7 +82,7 @@ def lvalue(lval, env):
         env['return_type'] = type_
         return (['get_local $' + str(label)], env)
     else:
-       die('variable ' + lval.name + ' not found', env['outpath'])
+       die('variable ' + lval.name + ' not declared', env['outpath'])
 
 
 # Types
@@ -252,8 +252,8 @@ def for_(for_, env):
 
 
 def while_(while_, env):
-    while_body = comp(while_.body, env)[0]
     test = comp(while_.condition, env)[0] + ['br_if 0']
+    while_body = comp(while_.body, env)[0]
     loop_body = ['  ' + op for op in while_body + test]
     if env['return_type'] is not None:
         die('expression in while cannot return a value', env['outpath'])
