@@ -1,0 +1,7 @@
+let
+  var i : int := 1
+in
+  while i < 10 do
+    (i := i + 1;
+     i)
+  end

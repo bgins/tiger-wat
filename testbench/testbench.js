@@ -31,8 +31,10 @@ const importObject = {
       maximum: 100
     }),
     print: arg => {
-      output += arg + '\n';
-      outputBody.appendChild(document.createTextNode(arg + '\n'));
+      // output += arg + '\n';
+      // outputBody.appendChild(document.createTextNode(arg + '\n'));
+      output += arg;
+      outputBody.appendChild(document.createTextNode(arg));
     }
   }
 };
@@ -79,8 +81,13 @@ const fetchWat = async (test) => {
   if (tigerSuccess === true) {
     var wat = await fetchSource(test, 'wat');
     watBody.textContent = wat.result;
-    if (/failed/g.exec(wat.result)) {
+    // if (/failed/g.exec(wat.result)) {
+    if (/not found/g.exec(wat.result)) {
       document.getElementById('wat-compiled').className = failureIndicator;
+
+      var error = await fetchSource(test, 'err');
+      expectedBody.textContent = error.result;
+
       return false;
     } else {
       document.getElementById('wat-compiled').className = successIndicator;
@@ -140,9 +147,10 @@ function runTest(test) {
 // attach click handlers to test menu entries
 var basicTests = ['int', 'add', 'subtract', 'multiply', 'divide', 'lt', 'gt', 'eq', 'ne', 'le', 'ge',
   'and', 'or', 'var', 'assign', 'seq', 'func', 'letvar', 'letfunc',
-  'for', 'while', 'if', 'ifelse'
+  'for', 'while', 'if', 'ifelse', 'ifelseInt'
 ];
-var integrationTests = ['funcs', 'letvars', 'letfuncs', 'letfunchain', 'letnested'];
+var integrationTests = ['funcs', 'letInt', 'letvars', 'letfuncs', 'letfunchain', 'letnested', 'recursiveCount', 'recursiveSum', 'fibonacci', 'subprimes', 'subprimes2', 'subprimes3'];
+var errorTests = ['varNotDeclared', 'assignNotDeclared', 'funcMissingArgs', 'funcExcessiveArgs', 'whileReturnsValue'];
 
 
 jQuery('#basic')
@@ -163,6 +171,14 @@ jQuery('#integration')
       });
   });
 
+jQuery('#errors')
+  .find('a')
+  .each((index, test) => {
+    jQuery(test)
+      .on('click', () => {
+        runTest(errorTests[index]);
+      });
+  });
 
 
 jQuery('#run-again')
