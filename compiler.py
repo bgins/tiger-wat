@@ -5,31 +5,13 @@ sys.path.append(os.path.join(cwd, "tiger-rpython"))
 
 from src.parser import *
 
-# TODO: keep types in a data structure
-module = '(module)'
-types = '''
-  (type $t0 (func (param i32)))
-  (type $t1 (func))'''
-memory = '''
-  (import "env" "memory" (memory $0 1))'''
-imports = '''
-  (import "env" "print" (func $print (type $t0)))'''
-exports = '''
-  (export "main" (func $main))'''
-data = r'''
-  (data 0 (offset (i32.const 4)) "\20\27\00\00")
-'''
-
-# def die(err):
-#     print('Compilation failed: ' + err)
 
 def die(err, outpath):
-    print(outpath)
     err_message = 'Compilation failed: ' + err
-    outfile = open(outpath, 'w')
+    print(err_message)
+    outfile = open(outpath + '.err', 'w')
     outfile.write(err_message)
     outfile.close()
-    print(err_message)
     sys.exit()
 
 def set_int_return(env):
@@ -57,7 +39,11 @@ def variable_declaration(var, env):
     index = len(env['locals'])
     env['locals'].append( (var.name, type_) )
     set_local = ['set_local $' + str(index)]
-    return (comp(var.exp, env)[0] + set_local, env)
+
+    expr = comp(var.exp, env)[0]
+    env['return_type'] = None
+
+    return (expr + set_local, env)
 
 
 def assign(assn, env):
@@ -67,7 +53,11 @@ def assign(assn, env):
     locals = [l[0] for l in env['locals']]
     if locals and assn.lvalue.name in locals:
         label = locals.index(assn.lvalue.name)
-        return (comp(assn.exp, env)[0] + ['set_local $' + str(label)], env)
+
+        expr = comp(assn.exp, env)[0]
+        env['return_type'] = None
+
+        return (expr + ['set_local $' + str(label)], env)
     else:
        die('variable ' + assn.lvalue.name + ' not declared', env['outpath'])
 
@@ -128,6 +118,7 @@ def function_declaration(func, env):
 
     body_env = { 'locals': params, 'funcs': env['funcs'] }
     # body_env = { 'locals': env['locals'] + params, 'funcs': env['funcs'] }
+
     locals_string = ''
     for index in range(len(params), len(body_env['locals'])):
         type_ = body_env['locals'][index][1]
@@ -151,6 +142,7 @@ def function_call(fc, env):
         return (func_body + ['call $print'], env)
     else:
         fnames = list(env['funcs'])
+
         if fnames and fc.name in fnames:
             func = env['funcs'][fc.name]
             params = func['params']
@@ -162,20 +154,11 @@ def function_call(fc, env):
             else:
                 args = []
                 for param, arg in zip(params, fc.args):
-                    if param[1] == 'i32' and arg.__class__ is IntegerValue:
-                        args.extend(comp(arg, env)[0])
-                    elif param[1] == 'i32' and arg.__class__ is LValue:
-                        locals = [l[0] for l in env['locals']]
-                        if locals and arg.name in locals:
-                            label = locals.index(arg.name)
-                            if env['locals'][label][1] == 'i32':
-                                args.extend(comp(arg, env)[0])
-                            else:
-                                die('argument type of ' + param[0] + ' does not match', env['outpath'])
-                        else:
-                            die('argument ' + param[0] + ' not in scope', env['outpath'])
+                    arg, arg_env = comp(arg, env)
+                    if param[1] == arg_env['return_type']:
+                        args.extend(arg)
                     else:
-                        die('argument type of ' + param[0] + ' does not match', env['outpath'])
+                        die('type of argument to ' + param[0] + ' is ' + arg_env['return_type'] + ', but the parameter has type ' + param[1], env['outpath'])
             env['return_type'] = return_type
             return (args + ['call $' + fc.name ], env)
         else:
@@ -198,7 +181,7 @@ def sequence(expressions, env):
 
 def let(let, env):
     env_locals_len = len(env['locals'])
-    let_env = { 'funcs': {}, 'locals': [] }
+    let_env = { }
 
     decls_code_string = ''
     for decl in let.declarations:
@@ -206,14 +189,12 @@ def let(let, env):
         if (decl_body != []):
             decls_code_string += '\n    '.join(decl_body) + '\n    '
 
-
-    # can we have more than one expression?
-    in_code_string = ''
+    in_code = []
     for expr in let.expressions:
         expr_body, let_env = comp(expr, let_env)
-        if (expr_body != []):
-            # in_code_string += '\n    '.join(expr_body) + '\n    '
-            in_code_string += '\n    '.join(expr_body)
+        in_code.extend(expr_body)
+
+    in_code_string = '\n    '.join(in_code)
 
     # add locals, but blot them out to put them out of scope
     env['locals'] = let_env['locals']
@@ -252,12 +233,12 @@ def for_(for_, env):
 
 
 def while_(while_, env):
-    test = comp(while_.condition, env)[0] + ['br_if 0']
+    test = ['i32.const 1'] + comp(while_.condition, env)[0] + ['i32.sub', 'br_if 1']
     while_body = comp(while_.body, env)[0]
-    loop_body = ['  ' + op for op in while_body + test]
+    loop_body = ['    ' + op for op in test + while_body + ['br 0']]
     if env['return_type'] is not None:
         die('expression in while cannot return a value', env['outpath'])
-    return (['loop'] + loop_body + ['end'], env)
+    return (['block', '  loop'] + loop_body + ['  end', 'end'], env)
 
 
 def if_(if_, env):
@@ -322,6 +303,22 @@ def comp(ast, env):
     return (code, next_env)
 
 
+# TODO: keep types in a data structure
+module = '(module)'
+types = '''
+  (type $t0 (func (param i32)))
+  (type $t1 (func))'''
+memory = '''
+  (import "env" "memory" (memory $0 1))'''
+imports = '''
+  (import "env" "print" (func $print (type $t0)))'''
+exports = '''
+  (export "main" (func $main))'''
+data = r'''
+  (data 0 (offset (i32.const 4)) "\20\27\00\00")
+'''
+
+
 # def compile_main(ast):
 def compile_main(ast, outpath):
     """Compile main function
@@ -340,10 +337,10 @@ def compile_main(ast, outpath):
         'memory': False
     }
     main_body, main_env = comp(ast, env)
-    main_body_string = '\n    '.join(main_body)
     locals_string = ''
     for index in range(0, len(main_env['locals'])):
         locals_string += '(local $' + str(index) + ' ' + main_env['locals'][index][1] + ')\n    '
+    main_body_string = '\n    '.join(main_body)
     func_main = '\n  (func $main (type $t1)\n    ' + locals_string + main_body_string + ')'
     if env['memory']:
         return module[:-1] + types + memory + imports + env['func_decs'] + func_main + exports + data + module[-1:]
@@ -357,10 +354,8 @@ if __name__ == '__main__':
         tiger_source = tiger_file.read()
         ast = Parser(tiger_source).parse()
         print(ast)
-        # module = compile_main(ast)
-        outpath = testpath[:-4] + '.wat'
+        outpath = testpath[:-4]
         module = compile_main(ast, outpath)
-        # outfile = open(test_path[:-4] + '.wat', 'w')
-        outfile = open(outpath, 'w')
+        outfile = open(outpath + '.wat', 'w')
         outfile.write(module)
         outfile.close()
