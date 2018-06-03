@@ -1,0 +1,21 @@
+let
+  var max : int := 1000
+  var s : int := 0
+  var n : int := 2
+  var p : int := 0
+  var d : int := 0 
+  var m : int := 0
+in
+  while n <= max do
+     (p := 1;
+     d := 2;
+     while d <= (n - 1) do
+         (m := d * (n / d);
+         if n <= m then
+           p := 0;
+         d := d + 1);
+      if p <> 0 then
+        s := s + n;
+      n := n + 1);
+  print(s)
+end
