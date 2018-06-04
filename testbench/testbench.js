@@ -21,6 +21,10 @@ const resetUI = () => {
   watBody.textContent = '';
   expectedBody.textContent = '';
   outputBody.textContent = '';
+  document.getElementById('tiger-implemented').className = notrunIndicator;
+  document.getElementById('wat-compiled').className = notrunIndicator;
+  document.getElementById('wasm-generated').className = notrunIndicator;
+  document.getElementById('test-passes').className = notrunIndicator;
 }
 
 // imports has WebAssembly.Memory object and helper functions
@@ -81,7 +85,6 @@ const fetchWat = async (test) => {
   if (tigerSuccess === true) {
     var wat = await fetchSource(test, 'wat');
     watBody.textContent = wat.result;
-    // if (/failed/g.exec(wat.result)) {
     if (/not found/g.exec(wat.result)) {
       document.getElementById('wat-compiled').className = failureIndicator;
 
@@ -94,7 +97,6 @@ const fetchWat = async (test) => {
       return wat.success;
     }
   } else {
-    document.getElementById('wat-compiled').className = notrunIndicator;
     return false;
   }
 };
@@ -109,10 +111,10 @@ const fetchExpected = async (test) => {
 const fetchWasm = async (test) => {
   var watSuccess = await fetchWat(test);
   if (watSuccess === true) {
-    WebAssembly.instantiateStreaming(fetch('tests/' + test + '.wasm'), importObject)
+    var wasm = fetch('tests/' + test + '.wasm');
+    document.getElementById('wasm-generated').className = successIndicator;
+    WebAssembly.instantiateStreaming(wasm, importObject)
       .then(async wasmObject => {
-        document.getElementById('wasm-generated').className = successIndicator;
-
         outputBody.textContent = 'actual:\n';
         output = '';
         wasmObject.instance.exports.main();
@@ -127,12 +129,8 @@ const fetchWasm = async (test) => {
       })
       .catch(err => {
         document.getElementById('wasm-generated').className = failureIndicator;
-        document.getElementById('test-passes').className = notrunIndicator;
         outputBody.textContent = err;
       });
-  } else {
-    document.getElementById('wasm-generated').className = notrunIndicator;
-    document.getElementById('test-passes').className = notrunIndicator;
   }
   lastTest = test; // save for run again button
 };
@@ -149,7 +147,9 @@ var basicTests = ['int', 'add', 'subtract', 'multiply', 'divide', 'lt', 'gt', 'e
   'and', 'or', 'var', 'assign', 'seq', 'func', 'letvar', 'letfunc',
   'for', 'while', 'if', 'ifelse', 'ifelseInt'
 ];
-var integrationTests = ['funcs', 'letInt', 'letvars', 'letfuncs', 'letfunchain', 'letnested', 'recursiveCount', 'recursiveSum', 'fibonacci', 'subprimes', 'subprimes2', 'subprimes3'];
+var integrationTests = ['funcs', 'ifnested', 'letInt', 'letvars', 'letfuncs', 'letfunchain', 'letnested',
+  'recursiveCount', 'recursiveSum', 'fibonacci', 'subprimes'
+];
 var errorTests = ['varNotDeclared', 'assignNotDeclared', 'funcMissingArgs', 'funcExcessiveArgs', 'whileReturnsValue'];
 
 
