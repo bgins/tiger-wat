@@ -54,7 +54,7 @@ def assign(assn, env):
     if locals and assn.lvalue.name in locals:
         label = locals.index(assn.lvalue.name)
 
-        expr = comp(assn.exp, env)[0]
+        expr = comp(assn.expression, env)[0]
         env['return_type'] = None
 
         return (expr + ['set_local $' + str(label)], env)
@@ -89,7 +89,6 @@ def type_id(typeid, env):
 
 # Functions
 
-# TODO: add return when appropriate
 def function_declaration(func, env):
     """Declare a function
     Build up list of params as a list of tuples with name and type and return_type as a string
@@ -98,9 +97,8 @@ def function_declaration(func, env):
     Does not add stack code to main, so returns an empty list.
     """
     params = []
-    param_names = list(func.parameters)
-    for i in range(0, len(param_names)):
-        params.append( (param_names[i], comp(func.parameters[param_names[i]], env)[0]) )
+    for i in range(0, len(func.parameters)):
+        params.append( (func.parameters[i].name, comp(func.parameters[i].type, env)[0]) )
     return_type = comp(func.return_type, env)[0]
 
     env['funcs'][func.name] = { 'params': params, 'return_type': return_type }
@@ -137,7 +135,7 @@ def function_call(fc, env):
     Generate code if everything checks out.
     """
     if fc.name == 'print':
-        func_body = comp(fc.args[0], env)[0]
+        func_body = comp(fc.arguments[0], env)[0]
         env['return_type'] = None
         return (func_body + ['call $print'], env)
     else:
@@ -147,13 +145,13 @@ def function_call(fc, env):
             func = env['funcs'][fc.name]
             params = func['params']
             return_type = func['return_type']
-            if len(fc.args) < len(params):
+            if len(fc.arguments) < len(params):
                 die('call to ' + fc.name + ' does not have enough arguments', env['outpath'])
-            elif len(fc.args) > len(params):
+            elif len(fc.arguments) > len(params):
                 die('call to ' + fc.name + ' has too many arguments', env['outpath'])
             else:
                 args = []
-                for param, arg in zip(params, fc.args):
+                for param, arg in zip(params, fc.arguments):
                     arg, arg_env = comp(arg, env)
                     if param[1] == arg_env['return_type']:
                         args.extend(arg)
@@ -181,20 +179,20 @@ def sequence(expressions, env):
 
 def let(let, env):
     env_locals_len = len(env['locals'])
-    let_env = { }
+    let_env = env
 
-    decls_code_string = ''
+    decls_code = []
     for decl in let.declarations:
-        decl_body, let_env = comp(decl, env)
+        decl_body, let_env = comp(decl, let_env)
         if (decl_body != []):
-            decls_code_string += '\n    '.join(decl_body) + '\n    '
+            decls_code.extend(decl_body)
 
     in_code = []
     for expr in let.expressions:
         expr_body, let_env = comp(expr, let_env)
         in_code.extend(expr_body)
 
-    in_code_string = '\n    '.join(in_code)
+    let_body = ['  ' + op for op in decls_code + in_code]
 
     # add locals, but blot them out to put them out of scope
     env['locals'] = let_env['locals']
@@ -202,7 +200,7 @@ def let(let, env):
         env['locals'][index] = ('', env['locals'][index][1])
 
     env['return_type'] = let_env['return_type']
-    return ([decls_code_string + in_code_string], env)
+    return (['block'] + let_body + ['end'], env)
 
 
 # Structured control flow
@@ -210,26 +208,31 @@ def let(let, env):
 def for_(for_, env):
     i_index = len(env['locals'])
     env['locals'].append( (for_.var, 'i32') )
-    initial = comp(for_.start, env)[0]
-    set_initial = ['set_local $' + str(i_index)]
+    # initial = comp(for_.start, env)[0]
+    # set_initial = ['set_local $' + str(i_index)]
+
+    init = comp(for_.start, env)[0] + ['set_local $' + str(i_index)]
 
     t_index = len(env['locals'])
     env['locals'].append( (for_.var + '_t', 'i32') )
-    termination = comp(for_.end, env)[0]
-    set_termination = ['set_local $' + str(t_index)]
+    # termination = comp(for_.end, env)[0]
+    # set_termination = ['set_local $' + str(t_index)]
+
+    termination = comp(for_.end, env)[0] + ['set_local $' + str(t_index)]
 
     for_body = comp(for_.body, env)[0]
 
     increment = ['get_local $' + str(i_index), 'i32.const 1', 'i32.add', 'set_local $' + str(i_index)]
     test = ['get_local $' + str(i_index), 'get_local $' + str(t_index), 'i32.le_s', 'br_if 0']
 
-    loop_init = initial + set_initial + termination + set_termination
-    loop_body = ['  ' + op for op in for_body + increment + test]
+    # loop_init = initial + set_initial + termination + set_termination
+    loop_init = ['  ' + op for op in init + termination]
+    loop_body = ['    ' + op for op in for_body + increment + test]
 
     if env['return_type'] is not None:
         die('expression in for cannot return a value', env['outpath'])
 
-    return (loop_init + ['loop'] + loop_body + ['end'], env)
+    return (['block'] + loop_init + ['  loop'] + loop_body + ['  end', 'end'], env)
 
 
 def while_(while_, env):
