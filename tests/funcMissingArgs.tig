@@ -1,3 +1,4 @@
-(function add(a:int, b:int) : int = a + b;
- var c : int := add(1);
- print(c))
+let
+  function add(a:int, b:int) : int = a + b
+in
+  print(add(1))

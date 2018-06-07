@@ -9,6 +9,17 @@ const server = express();
 const testPath = '../tests/';
 // const testPath = '../handcoded/';
 
+var compilationTime = Infinity;
+
+server.get('/comptime', function(req, res) {
+  res.status(200);
+  res.set({
+    'Content-Type': 'text/plain'
+  });
+  res.send(compilationTime);
+  compilationTime = Infinity;
+});
+
 server.get('/tests/:file', function(req, res) {
   if (/wat$/.exec(req.params.file)) {
     var tigerSource = req.params.file.slice(0, -4) + '.tig';
@@ -17,6 +28,7 @@ server.get('/tests/:file', function(req, res) {
     console.log('\n//~ ' + tigerSource + ' ~//');
     console.log('* Compiling wat *');
     shell.exec('python3 compiler.py ' + tigerSource, function(code, stdout, stderr) {
+      compilationTime = stdout.slice(-8);
       console.log('\nExit code: ' + code);
       console.log('Program stderr: ' + stderr);
       shell.cd('-');

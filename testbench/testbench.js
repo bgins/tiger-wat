@@ -11,6 +11,8 @@ const expectedBody = document.getElementById('expected-body');
 const notrunIndicator = 'fa fa-circle-thin fa-fw';
 const successIndicator = 'fa fa-check text-success fa-fw';
 const failureIndicator = 'fa fa-times text-danger fa-fw';
+const executionTimeIndicator = document.getElementById('execution-time');
+const compilationTimeIndicator = document.getElementById('compilation-time');
 
 var output = '';
 var lastTest = '';
@@ -25,6 +27,8 @@ const resetUI = () => {
   document.getElementById('wat-compiled').className = notrunIndicator;
   document.getElementById('wasm-generated').className = notrunIndicator;
   document.getElementById('test-passes').className = notrunIndicator;
+  document.getElementById('execution-time').textContent = '';
+  document.getElementById('compilation-time').textContent = '';
 }
 
 // imports has WebAssembly.Memory object and helper functions
@@ -94,12 +98,24 @@ const fetchWat = async (test) => {
       return false;
     } else {
       document.getElementById('wat-compiled').className = successIndicator;
+
+      var compilationTimeRequest = await fetch('/comptime');
+      var compilationTime = await compilationTimeRequest.text();
+      document.getElementById('compilation-time').textContent = 'compilation in ' + compilationTime;
+
       return wat.success;
     }
   } else {
     return false;
   }
 };
+
+
+// const fetchCompilationTime = async () => {
+//     var compilationTimeRequest = await fetch('/comptime');
+//     var compilationTime = await compilationTimeRequest.text();
+//     document.getElementById('compilation-time').textContent = 'compilation in ' + compilationTime;
+// };
 
 
 const fetchExpected = async (test) => {
@@ -110,6 +126,7 @@ const fetchExpected = async (test) => {
 
 const fetchWasm = async (test) => {
   var watSuccess = await fetchWat(test);
+  // await fetchCompilationTime();
   if (watSuccess === true) {
     var wasm = fetch('tests/' + test + '.wasm');
     document.getElementById('wasm-generated').className = successIndicator;
@@ -117,7 +134,11 @@ const fetchWasm = async (test) => {
       .then(async wasmObject => {
         outputBody.textContent = 'actual:\n';
         output = '';
+
+        var startExecution = performance.now();
         wasmObject.instance.exports.main();
+        var executionTime = performance.now() - startExecution;
+        executionTimeIndicator.textContent = 'execution in ' + executionTime.toFixed(3) + 'ms';
 
         var expected = await fetchExpected(test, 'out.bak');
         expectedBody.textContent = 'expected:\n' + expected;
@@ -150,7 +171,9 @@ var basicTests = ['int', 'add', 'subtract', 'multiply', 'divide', 'lt', 'gt', 'e
 var integrationTests = ['funcs', 'ifnested', 'letInt', 'letvars', 'letfuncs', 'letfunchain', 'letnested',
   'recursiveCount', 'recursiveSum', 'fibonacci', 'subprimes'
 ];
-var errorTests = ['varNotDeclared', 'assignNotDeclared', 'funcMissingArgs', 'funcExcessiveArgs', 'whileReturnsValue'];
+var errorTests = ['varNotDeclared', 'varNotDeclaredAssign', 'funcNotDeclared', 'funcMissingArgs', 'funcExcessiveArgs',
+  'forReturnsValue', 'whileReturnsValsue', 'ifelseTypeMismatch'
+];
 
 
 jQuery('#basic')

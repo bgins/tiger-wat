@@ -1,5 +1,6 @@
 import  os
 import sys
+import time
 cwd = os.getcwd()
 sys.path.append(os.path.join(cwd, "tiger-rpython"))
 
@@ -7,7 +8,7 @@ from src.parser import *
 
 
 def die(err, outpath):
-    err_message = 'Compilation failed: ' + err
+    err_message = 'Compilation error: ' + err
     print(err_message)
     outfile = open(outpath + '.err', 'w')
     outfile.write(err_message)
@@ -59,7 +60,7 @@ def assign(assn, env):
 
         return (expr + ['set_local $' + str(label)], env)
     else:
-       die('variable ' + assn.lvalue.name + ' not declared', env['outpath'])
+       die('variable ' + assn.lvalue.name + ' is not declared', env['outpath'])
 
 
 def lvalue(lval, env):
@@ -72,7 +73,8 @@ def lvalue(lval, env):
         env['return_type'] = type_
         return (['get_local $' + str(label)], env)
     else:
-       die('variable ' + lval.name + ' not declared', env['outpath'])
+       print('here')
+       die('variable ' + lval.name + ' is not declared', env['outpath'])
 
 
 # Types
@@ -160,7 +162,7 @@ def function_call(fc, env):
             env['return_type'] = return_type
             return (args + ['call $' + fc.name ], env)
         else:
-            die('function ' + fc.name + ' is not defined', env['outpath'])
+            die('function ' + fc.name + ' is not declared', env['outpath'])
 
 
 # Blocks
@@ -208,16 +210,10 @@ def let(let, env):
 def for_(for_, env):
     i_index = len(env['locals'])
     env['locals'].append( (for_.var, 'i32') )
-    # initial = comp(for_.start, env)[0]
-    # set_initial = ['set_local $' + str(i_index)]
-
     init = comp(for_.start, env)[0] + ['set_local $' + str(i_index)]
 
     t_index = len(env['locals'])
     env['locals'].append( (for_.var + '_t', 'i32') )
-    # termination = comp(for_.end, env)[0]
-    # set_termination = ['set_local $' + str(t_index)]
-
     termination = comp(for_.end, env)[0] + ['set_local $' + str(t_index)]
 
     for_body = comp(for_.body, env)[0]
@@ -225,7 +221,6 @@ def for_(for_, env):
     increment = ['get_local $' + str(i_index), 'i32.const 1', 'i32.add', 'set_local $' + str(i_index)]
     test = ['get_local $' + str(i_index), 'get_local $' + str(t_index), 'i32.le_s', 'br_if 0']
 
-    # loop_init = initial + set_initial + termination + set_termination
     loop_init = ['  ' + op for op in init + termination]
     loop_body = ['    ' + op for op in for_body + increment + test]
 
@@ -261,7 +256,7 @@ def if_(if_, env):
     elif true_return_type == None and false_return_type == None:
         if_string = 'if'
     else:
-        die('arms of if-then-else do not match', env['outpath'])
+        die('arms of an if-then-else expression must have the same type', env['outpath'])
 
     true_body = ['  ' + op for op in body_if_true]
     false_body = ['  ' + op for op in body_if_false]
@@ -354,11 +349,15 @@ def compile_main(ast, outpath):
 if __name__ == '__main__':
     testpath = os.path.join("tests", sys.argv[1])
     with open(testpath, 'r') as tiger_file:
+        start_time = time.time()
         tiger_source = tiger_file.read()
         ast = Parser(tiger_source).parse()
-        print(ast)
+        # print(ast)
         outpath = testpath[:-4]
         module = compile_main(ast, outpath)
         outfile = open(outpath + '.wat', 'w')
         outfile.write(module)
         outfile.close()
+        elapsed_time = format((time.time() - start_time)*1000.0, '#.3g')
+        print(str(elapsed_time) + "ms")
+
