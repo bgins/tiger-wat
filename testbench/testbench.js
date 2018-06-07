@@ -31,7 +31,7 @@ const resetUI = () => {
   document.getElementById('compilation-time').textContent = '';
 }
 
-// imports has WebAssembly.Memory object and helper functions
+// importObject has WebAssembly.Memory object and helper functions
 const importObject = {
   env: {
     memory: new WebAssembly.Memory({
@@ -39,8 +39,6 @@ const importObject = {
       maximum: 100
     }),
     print: arg => {
-      // output += arg + '\n';
-      // outputBody.appendChild(document.createTextNode(arg + '\n'));
       output += arg;
       outputBody.appendChild(document.createTextNode(arg));
     }
@@ -111,13 +109,6 @@ const fetchWat = async (test) => {
 };
 
 
-// const fetchCompilationTime = async () => {
-//     var compilationTimeRequest = await fetch('/comptime');
-//     var compilationTime = await compilationTimeRequest.text();
-//     document.getElementById('compilation-time').textContent = 'compilation in ' + compilationTime;
-// };
-
-
 const fetchExpected = async (test) => {
   var expected = await fetchSource(test, 'out.bak');
   return expected.result;
@@ -126,7 +117,6 @@ const fetchExpected = async (test) => {
 
 const fetchWasm = async (test) => {
   var watSuccess = await fetchWat(test);
-  // await fetchCompilationTime();
   if (watSuccess === true) {
     var wasm = fetch('tests/' + test + '.wasm');
     document.getElementById('wasm-generated').className = successIndicator;
@@ -138,7 +128,7 @@ const fetchWasm = async (test) => {
         var startExecution = performance.now();
         wasmObject.instance.exports.main();
         var executionTime = performance.now() - startExecution;
-        executionTimeIndicator.textContent = 'execution in ' + executionTime.toFixed(3) + 'ms';
+        executionTimeIndicator.textContent = 'execution in ' + executionTime.toFixed(2) + 'ms';
 
         var expected = await fetchExpected(test, 'out.bak');
         expectedBody.textContent = 'expected:\n' + expected;
@@ -172,7 +162,7 @@ var integrationTests = ['funcs', 'ifnested', 'letInt', 'letvars', 'letfuncs', 'l
   'recursiveCount', 'recursiveSum', 'fibonacci', 'subprimes'
 ];
 var errorTests = ['varNotDeclared', 'varNotDeclaredAssign', 'funcNotDeclared', 'funcMissingArgs', 'funcExcessiveArgs',
-  'forReturnsValue', 'whileReturnsValsue', 'ifelseTypeMismatch'
+  'forReturnsValue', 'whileReturnsValue', 'ifelseTypeMismatch'
 ];
 
 

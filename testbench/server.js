@@ -7,11 +7,10 @@ var shell = require('shelljs');
 
 const server = express();
 const testPath = '../tests/';
-// const testPath = '../handcoded/';
 
 var compilationTime = Infinity;
 
-server.get('/comptime', function(req, res) {
+server.get('/comptime', (req, res) => {
   res.status(200);
   res.set({
     'Content-Type': 'text/plain'
@@ -20,15 +19,15 @@ server.get('/comptime', function(req, res) {
   compilationTime = Infinity;
 });
 
-server.get('/tests/:file', function(req, res) {
+server.get('/tests/:file', (req, res) => {
   if (/wat$/.exec(req.params.file)) {
     var tigerSource = req.params.file.slice(0, -4) + '.tig';
     shell.cd('..');
     shell.rm('tests/' + req.params.file);
     console.log('\n//~ ' + tigerSource + ' ~//');
     console.log('* Compiling wat *');
-    shell.exec('python3 compiler.py ' + tigerSource, function(code, stdout, stderr) {
-      compilationTime = stdout.slice(-8);
+    shell.exec('python3 compiler.py ' + tigerSource, (code, stdout, stderr) => {
+      compilationTime = stdout.slice(-7);
       console.log('\nExit code: ' + code);
       console.log('Program stderr: ' + stderr);
       shell.cd('-');
@@ -41,7 +40,7 @@ server.get('/tests/:file', function(req, res) {
     shell.cd(testPath);
     shell.rm(req.params.file);
     console.log('\n* Generating wasm *');
-    shell.exec('wasm -d ' + watSource + ' -o ' + req.params.file, function(code, stdout, stderr) {
+    shell.exec('wasm -d ' + watSource + ' -o ' + req.params.file, (code, stdout, stderr) => {
       fs.readFile(testPath + req.params.file, (err, data) => {
         console.log(stdout);
         console.log('Exit code: ' + code);

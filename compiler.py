@@ -303,13 +303,10 @@ def comp(ast, env):
 
 # TODO: keep types in a data structure
 module = '(module)'
-types = '''
-  (type $t0 (func (param i32)))
-  (type $t1 (func))'''
 memory = '''
   (import "env" "memory" (memory $0 1))'''
 imports = '''
-  (import "env" "print" (func $print (type $t0)))'''
+  (import "env" "print" (func $print (param i32)))'''
 exports = '''
   (export "main" (func $main))'''
 data = r'''
@@ -321,14 +318,12 @@ data = r'''
 def compile_main(ast, outpath):
     """Compile main function
     This function provides a wrapper for the program to allow it to be called by a main function.
-    Module level code such function declarations and types are collected at this level,
+    Module level code such function declarations and imports are collected at this level,
     and code text is assembled here including imports, exports, and code to set up memory.
     """
     env = {
         'outpath': outpath,
-        # types: [],
         'func_decs': '',
-        # datatypes: {},
         'funcs': {},
         'locals': [],
         'return_type': None,
@@ -339,11 +334,11 @@ def compile_main(ast, outpath):
     for index in range(0, len(main_env['locals'])):
         locals_string += '(local $' + str(index) + ' ' + main_env['locals'][index][1] + ')\n    '
     main_body_string = '\n    '.join(main_body)
-    func_main = '\n  (func $main (type $t1)\n    ' + locals_string + main_body_string + ')'
+    func_main = '\n  (func $main\n    ' + locals_string + main_body_string + ')'
     if env['memory']:
-        return module[:-1] + types + memory + imports + env['func_decs'] + func_main + exports + data + module[-1:]
+        return module[:-1] + memory + imports + env['func_decs'] + func_main + exports + data + module[-1:]
     else:
-        return module[:-1] + types + imports + env['func_decs'] + func_main + exports + module[-1:]
+        return module[:-1] + imports + env['func_decs'] + func_main + exports + module[-1:]
 
 
 if __name__ == '__main__':
@@ -352,12 +347,12 @@ if __name__ == '__main__':
         start_time = time.time()
         tiger_source = tiger_file.read()
         ast = Parser(tiger_source).parse()
-        # print(ast)
+        print(ast)
         outpath = testpath[:-4]
         module = compile_main(ast, outpath)
         outfile = open(outpath + '.wat', 'w')
         outfile.write(module)
         outfile.close()
-        elapsed_time = format((time.time() - start_time)*1000.0, '#.3g')
+        elapsed_time = format((time.time() - start_time)*1000.0, '#.2g')
         print(str(elapsed_time) + "ms")
 
