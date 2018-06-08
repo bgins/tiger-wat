@@ -41,13 +41,13 @@ def variable_declaration(var, env):
     locals = [l[0] for l in env['locals']]
     if var.type is None and var.exp.__class__ is IntegerValue:
         type_ = 'i32'
-    # elif var.type is None and var.exp.__class__ is StringValue:
-        # type_ = 'string'
     elif var.type.name == 'int':
         type_ = 'i32'
     else:
         type_ = 'string'
+
     index = len(env['locals'])
+
     env['locals'].append( (var.name, type_) )
     set_local = ['set_local $' + str(index)]
 
@@ -65,13 +65,11 @@ def assign(assn, env):
     locals = [l[0] for l in env['locals']]
     if locals and assn.lvalue.name in locals:
         label = locals.index(assn.lvalue.name)
-
         expr = comp(assn.expression, env)[0]
         env['return_type'] = None
-
         return (expr + ['set_local $' + str(label)], env)
     else:
-       die('variable ' + assn.lvalue.name + ' is not declared', env['outpath'])
+        die('variable ' + assn.lvalue.name + ' is not declared', env['outpath'])
 
 
 def lvalue(lval, env):
@@ -88,7 +86,7 @@ def lvalue(lval, env):
         env['return_type'] = type_
         return (['get_local $' + str(label)], env)
     else:
-       die('variable ' + lval.name + ' is not declared', env['outpath'])
+        die('variable ' + lval.name + ' is not declared', env['outpath'])
 
 
 # Types
@@ -111,7 +109,8 @@ def function_declaration(func, env):
 
     Build up list of params as a list of tuples [(name, type)] and return_type as a string.
     Add the function to environment.
-    Generate stack code for the function and append it to function declarations.
+    Generate stack code for params, result, body, and local declarations.
+    Append function to declarations in environment.
 
     Does not add immediately add any stack code to main since function declarations
     are in a different section of the module.
@@ -129,21 +128,22 @@ def function_declaration(func, env):
 
     if return_type:
         result_string = '(result ' + return_type + ')\n    '
-        return_string = '\n    return'
     else:
         result_string = ''
-        return_string = ''
 
-    body_env = { 'locals': params, 'funcs': env['funcs'] }
+    body_env = env.copy()
+    body_env['locals'] = params.copy()
+    body, body_env = comp(func.body, body_env)
 
     locals_string = ''
     for index in range(len(params), len(body_env['locals'])):
         type_ = body_env['locals'][index][1]
         locals_string += ('(local $' + str(index) + ' ' + type_ + ')\n    ')
 
-    body = '\n    '.join(comp(func.body, body_env)[0])
+    body_string = '\n    '.join(body)
 
-    env['func_decs'] += ('\n  (func $' + func.name + ' ' + param_string + result_string + locals_string + body + return_string + ')')
+    env['func_decls'] += ('\n  (func $' + func.name + ' ' + param_string + result_string + locals_string + body_string + ')')
+
     return ([], env)
 
 
@@ -203,14 +203,17 @@ def let(let, env):
 
     Compile each declaration in the let block.
     Compile each expression in the in block.
+    Check return type and generate block string.
     Add indentation for nice looking code.
     Add let locals to environment, but blot out their names to put them out of scope.
+    Update function declarations and return type in the environment.
 
     Note that this last step is needed so that all wat locals are declared before the
     body of function and maintain their index. In the stack code, they are in a single
     scope, but we only access them from the let environment.
     """
-    let_env = env
+    initial_env_len = len(env['locals'])
+    let_env = env.copy()
 
     decls_code = []
     for decl in let.declarations:
@@ -223,14 +226,21 @@ def let(let, env):
         expr_body, let_env = comp(expr, let_env)
         in_code.extend(expr_body)
 
+    if let_env['return_type'] == 'i32':
+       block_string = 'block (result i32)'
+    else:
+       block_string = 'block'
+
     let_body = ['  ' + op for op in decls_code + in_code]
 
     env['locals'] = let_env['locals']
-    for index in range(len(env['locals']), len(let_env['locals'])):
+    for index in range(initial_env_len, len(let_env['locals'])):
         env['locals'][index] = ('', env['locals'][index][1])
 
+    env['func_decls'] += let_env['func_decls']
     env['return_type'] = let_env['return_type']
-    return (['block'] + let_body + ['end'], env)
+
+    return ([block_string] + let_body + ['end'], env)
 
 
 # Structured control flow
@@ -283,8 +293,10 @@ def while_(while_, env):
     condition = ['i32.const 1'] + comp(while_.condition, env)[0] + ['i32.sub', 'br_if 1']
     while_body = comp(while_.body, env)[0]
     loop_body = ['    ' + op for op in condition + while_body + ['br 0']]
+
     if env['return_type'] is not None:
         die('expression in while cannot return a value', env['outpath'])
+
     return (['block', '  loop'] + loop_body + ['  end', 'end'], env)
 
 
@@ -292,7 +304,7 @@ def if_(if_, env):
     """Compile if expression
 
     Compile condition, if_true arm, and if_false arm (if we have one).
-    Check that types are the same and generate the appropriate `if`.
+    Check that types are the same and generate if string.
     Add indentation for nice looking code.
     Add condition and bodies to the stack code.
 
@@ -302,6 +314,7 @@ def if_(if_, env):
 
     body_if_true, if_env = comp(if_.body_if_true, env)
     true_return_type = if_env['return_type']
+
     if if_.body_if_false:
         body_if_false, if_env = comp(if_.body_if_false, env)
         false_return_type = if_env['return_type']
@@ -381,22 +394,26 @@ def compile_main(ast, outpath):
     """
     env = {
         'outpath': outpath,
-        'func_decs': '',
+        'func_decls': '',
         'funcs': {},
         'locals': [],
         'return_type': None,
         'memory': False
     }
     main_body, main_env = comp(ast, env)
+
     locals_string = ''
     for index in range(0, len(main_env['locals'])):
         locals_string += '(local $' + str(index) + ' ' + main_env['locals'][index][1] + ')\n    '
+
     main_body_string = '\n    '.join(main_body)
+
     func_main = '\n  (func $main\n    ' + locals_string + main_body_string + ')'
+
     if env['memory']:
-        return module[:-1] + memory + imports + env['func_decs'] + func_main + exports + data + module[-1:]
+        return module[:-1] + memory + imports + env['func_decls'] + func_main + exports + data + module[-1:]
     else:
-        return module[:-1] + imports + env['func_decs'] + func_main + exports + module[-1:]
+        return module[:-1] + imports + env['func_decls'] + func_main + exports + module[-1:]
 
 
 if __name__ == '__main__':
@@ -408,13 +425,17 @@ if __name__ == '__main__':
     testpath = os.path.join("tests", sys.argv[1])
     with open(testpath, 'r') as tiger_file:
         start_time = time.time()
+
         tiger_source = tiger_file.read()
         ast = Parser(tiger_source).parse()
-        print(ast)
         outpath = testpath[:-4]
+
+        print(ast)
         module = compile_main(ast, outpath)
+
         outfile = open(outpath + '.wat', 'w')
         outfile.write(module)
         outfile.close()
+
         elapsed_time = format((time.time() - start_time)*1000.0, '#.2g')
         print(str(elapsed_time) + "ms")
