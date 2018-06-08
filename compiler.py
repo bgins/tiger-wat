@@ -8,6 +8,10 @@ from src.parser import *
 
 
 def die(err, outpath):
+    """Die with a compilation error
+
+    Write and print the error.
+    """
     err_message = 'Compilation error: ' + err
     print(err_message)
     outfile = open(outpath + '.err', 'w')
@@ -16,6 +20,7 @@ def die(err, outpath):
     sys.exit()
 
 def set_int_return(env):
+    """Set integer return type"""
     env['return_type'] = 'i32'
     return env
 
@@ -24,9 +29,14 @@ def set_int_return(env):
 
 def variable_declaration(var, env):
     """Declare a variable
-    Check if variable already declared and replace it if so.
-    Otherwise, determine the type and assign it the next index as a label.
-    Add to environment and generate stack code.
+
+    Determine the type and assign it the next index as a label.
+    Add the variable and rhs expression to the stack code.
+
+    In the environment, a variable is stored at the matching index in a
+    list of locals. This is used throughout the compiler to retrieve the
+    appropriate label. Access to names is from the back of the list to
+    effectively provide shadowing (see lvalue).
     """
     locals = [l[0] for l in env['locals']]
     if var.type is None and var.exp.__class__ is IntegerValue:
@@ -49,7 +59,8 @@ def variable_declaration(var, env):
 
 def assign(assn, env):
     """Assign a local
-    More needed to handle strings.
+
+    More will be needed here to handle strings.
     """
     locals = [l[0] for l in env['locals']]
     if locals and assn.lvalue.name in locals:
@@ -64,7 +75,11 @@ def assign(assn, env):
 
 
 def lvalue(lval, env):
-    """Get value for an lval"""
+    """Evaluate an lval
+
+    Find all matching names in locals and select the last occurrence, which shadows the others.
+    Add stack code to get the local value.
+    """
     locals = [l[0] for l in env['locals']]
     if locals and lval.name in locals:
         labels = [i for i, x in enumerate(locals) if x == lval.name]
@@ -73,7 +88,6 @@ def lvalue(lval, env):
         env['return_type'] = type_
         return (['get_local $' + str(label)], env)
     else:
-       print('here')
        die('variable ' + lval.name + ' is not declared', env['outpath'])
 
 
@@ -81,7 +95,8 @@ def lvalue(lval, env):
 
 def type_id(typeid, env):
     """Retrieve type from TypeId node
-    Strings will need to be handled here as well
+
+    Strings will need to be handled here as well.
     """
     if typeid.name == 'int':
         return ('i32', env)
@@ -93,10 +108,13 @@ def type_id(typeid, env):
 
 def function_declaration(func, env):
     """Declare a function
-    Build up list of params as a list of tuples with name and type and return_type as a string
-    Add function to environment.
-    Generate stack code for function and append it to function declarations.
-    Does not add stack code to main, so returns an empty list.
+
+    Build up list of params as a list of tuples [(name, type)] and return_type as a string.
+    Add the function to environment.
+    Generate stack code for the function and append it to function declarations.
+
+    Does not add immediately add any stack code to main since function declarations
+    are in a different section of the module.
     """
     params = []
     for i in range(0, len(func.parameters)):
@@ -117,7 +135,6 @@ def function_declaration(func, env):
         return_string = ''
 
     body_env = { 'locals': params, 'funcs': env['funcs'] }
-    # body_env = { 'locals': env['locals'] + params, 'funcs': env['funcs'] }
 
     locals_string = ''
     for index in range(len(params), len(body_env['locals'])):
@@ -131,9 +148,10 @@ def function_declaration(func, env):
 
 
 def function_call(fc, env):
-    """Call function
-    Check if call is built-in print function.
-    Otherwise, check if the function is defined, then check number of args and argument types (ints only for now)
+    """Call a function
+
+    Check if call is to the built-in print function.
+    If not, check if the function is defined and check the number of args and their types (ints only for now).
     Generate code if everything checks out.
     """
     if fc.name == 'print':
@@ -169,6 +187,7 @@ def function_call(fc, env):
 
 def sequence(expressions, env):
     """Compile each expression in a sequence
+
     Update environment with as we go.
     """
     if expressions:
@@ -180,7 +199,17 @@ def sequence(expressions, env):
 
 
 def let(let, env):
-    env_locals_len = len(env['locals'])
+    """Compile let expression
+
+    Compile each declaration in the let block.
+    Compile each expression in the in block.
+    Add indentation for nice looking code.
+    Add let locals to environment, but blot out their names to put them out of scope.
+
+    Note that this last step is needed so that all wat locals are declared before the
+    body of function and maintain their index. In the stack code, they are in a single
+    scope, but we only access them from the let environment.
+    """
     let_env = env
 
     decls_code = []
@@ -196,9 +225,8 @@ def let(let, env):
 
     let_body = ['  ' + op for op in decls_code + in_code]
 
-    # add locals, but blot them out to put them out of scope
     env['locals'] = let_env['locals']
-    for index in range(env_locals_len, len(let_env['locals'])):
+    for index in range(len(env['locals']), len(let_env['locals'])):
         env['locals'][index] = ('', env['locals'][index][1])
 
     env['return_type'] = let_env['return_type']
@@ -208,6 +236,18 @@ def let(let, env):
 # Structured control flow
 
 def for_(for_, env):
+    """Compile for expression
+
+    Add loop variable and set its initial value.
+    Add termination value as a local.
+    Compile body and add stack code for condition, increment and body.
+    Add indentation for nice looking code.
+    Check that body does not return a value.
+
+    Note that `br_if 0` checks stack for result from condition. If 1 (true),
+    we branch to zero blocks out, i.e. the top of the loop. Otherwise, we continue
+    and exit the loop.
+    """
     i_index = len(env['locals'])
     env['locals'].append( (for_.var, 'i32') )
     init = comp(for_.start, env)[0] + ['set_local $' + str(i_index)]
@@ -219,10 +259,10 @@ def for_(for_, env):
     for_body = comp(for_.body, env)[0]
 
     increment = ['get_local $' + str(i_index), 'i32.const 1', 'i32.add', 'set_local $' + str(i_index)]
-    test = ['get_local $' + str(i_index), 'get_local $' + str(t_index), 'i32.le_s', 'br_if 0']
+    condition = ['get_local $' + str(i_index), 'get_local $' + str(t_index), 'i32.le_s', 'br_if 0']
 
     loop_init = ['  ' + op for op in init + termination]
-    loop_body = ['    ' + op for op in for_body + increment + test]
+    loop_body = ['    ' + op for op in for_body + increment + condition]
 
     if env['return_type'] is not None:
         die('expression in for cannot return a value', env['outpath'])
@@ -231,15 +271,33 @@ def for_(for_, env):
 
 
 def while_(while_, env):
-    test = ['i32.const 1'] + comp(while_.condition, env)[0] + ['i32.sub', 'br_if 1']
+    """Compile while expression
+
+    Compile condition and body, and add stack code for both.
+    Add indentation for nice looking code.
+    Check that body does not return a value.
+
+    Note that `br_if 1` checks the stack for the result from condition and branches one
+    block out if 1 (true), which jumps to the end of the enclosing block and terminates the loop.
+    """
+    condition = ['i32.const 1'] + comp(while_.condition, env)[0] + ['i32.sub', 'br_if 1']
     while_body = comp(while_.body, env)[0]
-    loop_body = ['    ' + op for op in test + while_body + ['br 0']]
+    loop_body = ['    ' + op for op in condition + while_body + ['br 0']]
     if env['return_type'] is not None:
         die('expression in while cannot return a value', env['outpath'])
     return (['block', '  loop'] + loop_body + ['  end', 'end'], env)
 
 
 def if_(if_, env):
+    """Compile if expression
+
+    Compile condition, if_true arm, and if_false arm (if we have one).
+    Check that types are the same and generate the appropriate `if`.
+    Add indentation for nice looking code.
+    Add condition and bodies to the stack code.
+
+    Strings will need to be handled here as well.
+    """
     condition = comp(if_.condition, env)[0]
 
     body_if_true, if_env = comp(if_.body_if_true, env)
@@ -263,7 +321,9 @@ def if_(if_, env):
 
     return(condition + [if_string] + true_body + ['else'] + false_body + ['end'], env)
 
-# TODO: check if unsigned integer instructions are needed
+
+# Compilation
+
 emit = {
     IntegerValue: lambda intval, env: (['i32.const ' +  str(intval.integer)], set_int_return(env)),
     # StringValue: lambda strval, env: ([''], env),
@@ -293,15 +353,12 @@ emit = {
 }
 
 
-# Compilation
-
 def comp(ast, env):
-    """Generate code from AST updating the environment as we go"""
+    """Generate code from AST nodes updating the environment as we go"""
     (code, next_env) = emit[ast.__class__](ast, env)
     return (code, next_env)
 
 
-# TODO: keep types in a data structure
 module = '(module)'
 memory = '''
   (import "env" "memory" (memory $0 1))'''
@@ -314,12 +371,13 @@ data = r'''
 '''
 
 
-# def compile_main(ast):
 def compile_main(ast, outpath):
-    """Compile main function
-    This function provides a wrapper for the program to allow it to be called by a main function.
+    """Compile main function and assemble module
+
+    This is the entry point for the program called from JavaScript.
     Module level code such function declarations and imports are collected at this level,
-    and code text is assembled here including imports, exports, and code to set up memory.
+    and the stack code is assembled including imports, exports, and memory.
+    More sections are available in the spec and may be added as needed.
     """
     env = {
         'outpath': outpath,
@@ -342,6 +400,11 @@ def compile_main(ast, outpath):
 
 
 if __name__ == '__main__':
+    """Read source and start compilation
+
+    Write resulting module to .wat file.
+    Track compilation time.
+    """
     testpath = os.path.join("tests", sys.argv[1])
     with open(testpath, 'r') as tiger_file:
         start_time = time.time()
@@ -355,4 +418,3 @@ if __name__ == '__main__':
         outfile.close()
         elapsed_time = format((time.time() - start_time)*1000.0, '#.2g')
         print(str(elapsed_time) + "ms")
-
