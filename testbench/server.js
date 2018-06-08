@@ -27,7 +27,7 @@ server.get('/tests/:file', (req, res) => {
     console.log('\n//~ ' + tigerSource + ' ~//');
     console.log('* Compiling wat *');
     shell.exec('python3 compiler.py ' + tigerSource, (code, stdout, stderr) => {
-      compilationTime = stdout.slice(-7);
+      compilationTime = stdout.split('\n').pop();
       console.log('\nExit code: ' + code);
       console.log('Program stderr: ' + stderr);
       shell.cd('-');

@@ -91,7 +91,7 @@ const fetchWat = async (test) => {
       document.getElementById('wat-compiled').className = failureIndicator;
 
       var error = await fetchSource(test, 'err');
-      expectedBody.textContent = error.result;
+      document.getElementById('execution-time').textContent = error.result;
 
       return false;
     } else {
@@ -156,10 +156,10 @@ function runTest(test) {
 // attach click handlers to test menu entries
 var basicTests = ['int', 'add', 'subtract', 'multiply', 'divide', 'lt', 'gt', 'eq', 'ne', 'le', 'ge',
   'and', 'or', 'var', 'assign', 'seq', 'func', 'letvar', 'letfunc',
-  'for', 'while', 'if', 'ifelse', 'ifelseInt'
+  'if', 'ifelse', 'ifelseInt', 'for', 'while'
 ];
-var integrationTests = ['funcs', 'ifnested', 'letInt', 'letvars', 'letfuncs', 'letfunchain', 'letnested',
-  'recursiveCount', 'recursiveSum', 'fibonacci', 'subprimes'
+var integrationTests = ['funcs', 'seqInt', 'letInt', 'letvars', 'letfuncs', 'letfunchain', 'letnested',
+  'letshadowvar', 'ifnested', 'recursiveCount', 'recursiveSum', 'fibonacci', 'subprimes'
 ];
 var errorTests = ['varNotDeclared', 'varNotDeclaredAssign', 'funcNotDeclared', 'funcMissingArgs', 'funcExcessiveArgs',
   'forReturnsValue', 'whileReturnsValue', 'ifelseTypeMismatch'

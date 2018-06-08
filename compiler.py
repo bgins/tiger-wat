@@ -110,7 +110,7 @@ def function_declaration(func, env):
     Build up list of params as a list of tuples [(name, type)] and return_type as a string.
     Add the function to environment.
     Generate stack code for params, result, body, and local declarations.
-    Append function to declarations in environment.
+    Add declaration to functions in environment.
 
     Does not add immediately add any stack code to main since function declarations
     are in a different section of the module.
@@ -142,7 +142,7 @@ def function_declaration(func, env):
 
     body_string = '\n    '.join(body)
 
-    env['func_decls'] += ('\n  (func $' + func.name + ' ' + param_string + result_string + locals_string + body_string + ')')
+    env['funcs'][func.name]['declaration'] =  '\n  (func $' + func.name + ' ' + param_string + result_string + locals_string + body_string + ')'
 
     return ([], env)
 
@@ -237,7 +237,6 @@ def let(let, env):
     for index in range(initial_env_len, len(let_env['locals'])):
         env['locals'][index] = ('', env['locals'][index][1])
 
-    env['func_decls'] += let_env['func_decls']
     env['return_type'] = let_env['return_type']
 
     return ([block_string] + let_body + ['end'], env)
@@ -394,13 +393,16 @@ def compile_main(ast, outpath):
     """
     env = {
         'outpath': outpath,
-        'func_decls': '',
         'funcs': {},
         'locals': [],
         'return_type': None,
         'memory': False
     }
     main_body, main_env = comp(ast, env)
+
+    functions = ''
+    for func in env['funcs']:
+        functions += env['funcs'][func]['declaration']
 
     locals_string = ''
     for index in range(0, len(main_env['locals'])):
@@ -411,9 +413,9 @@ def compile_main(ast, outpath):
     func_main = '\n  (func $main\n    ' + locals_string + main_body_string + ')'
 
     if env['memory']:
-        return module[:-1] + memory + imports + env['func_decls'] + func_main + exports + data + module[-1:]
+        return module[:-1] + memory + imports + functions + func_main + exports + data + module[-1:]
     else:
-        return module[:-1] + imports + env['func_decls'] + func_main + exports + module[-1:]
+        return module[:-1] + imports + functions + func_main + exports + module[-1:]
 
 
 if __name__ == '__main__':
@@ -438,4 +440,4 @@ if __name__ == '__main__':
         outfile.close()
 
         elapsed_time = format((time.time() - start_time)*1000.0, '#.2g')
-        print(str(elapsed_time) + "ms")
+        print(str(elapsed_time) + "ms", end='')
