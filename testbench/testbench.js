@@ -159,7 +159,8 @@ var basicTests = ['int', 'add', 'subtract', 'multiply', 'divide', 'lt', 'gt', 'e
   'if', 'ifelse', 'ifelseInt', 'for', 'while'
 ];
 var integrationTests = ['funcs', 'seqInt', 'letInt', 'letvars', 'letfuncs', 'letfunchain', 'letnested',
-  'letshadowvar', 'ifnested', 'recursiveCount', 'recursiveSum', 'fibonacci', 'subprimes'
+                        'letshadowvar', 'ifnested', 'ifands', 'ifors', 'ifbools', 'ifcompare', 'recursiveCount', 'recursiveSum',
+  'fibonacci', 'subprimes'
 ];
 var errorTests = ['varNotDeclared', 'varNotDeclaredAssign', 'funcNotDeclared', 'funcMissingArgs', 'funcExcessiveArgs',
   'forReturnsValue', 'whileReturnsValue', 'ifelseTypeMismatch'

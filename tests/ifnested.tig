@@ -1,9 +1,9 @@
 let
-  var a : int := 1
-  var b : int := 0
+  var t : int := 1
+  var f : int := 0
 in 
-  if a then
-    if b then
+  if t then
+    if f then
       print(0)
     else
       print(1)
