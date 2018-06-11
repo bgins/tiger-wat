@@ -286,7 +286,7 @@ def while_(while_, env):
     Add indentation for nice looking code.
     Check that body does not return a value.
 
-    Note that `br_if 1` checks the stack for the result from condition and branches one
+    Note that `br_if 1` checks the stack for one minus the result of the condition and branches one
     block out if 1 (true), which jumps to the end of the enclosing block and terminates the loop.
     """
     condition = ['i32.const 1'] + comp(while_.condition, env)[0] + ['i32.sub', 'br_if 1']

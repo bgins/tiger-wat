@@ -1,3 +1,3 @@
 [submodule "tiger-rpython"]
 	path = tiger-rpython
-	url = git@github.com:thuselem/tiger-rpython.git
+  url = https://github.com/thuselem/tiger-rpython.git
