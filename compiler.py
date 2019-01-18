@@ -49,12 +49,12 @@ def variable_declaration(var, env):
     index = len(env['locals'])
 
     env['locals'].append( (var.name, type_) )
-    set_local = ['set_local $' + str(index)]
+    local_set = ['local.set $' + str(index)]
 
     expr = comp(var.exp, env)[0]
     env['return_type'] = None
 
-    return (expr + set_local, env)
+    return (expr + local_set, env)
 
 
 def assign(assn, env):
@@ -67,7 +67,7 @@ def assign(assn, env):
         label = locals.index(assn.lvalue.name)
         expr = comp(assn.expression, env)[0]
         env['return_type'] = None
-        return (expr + ['set_local $' + str(label)], env)
+        return (expr + ['local.set $' + str(label)], env)
     else:
         die('variable ' + assn.lvalue.name + ' is not declared', env['outpath'])
 
@@ -84,7 +84,7 @@ def lvalue(lval, env):
         label = labels[-1]
         type_ = env['locals'][label][1]
         env['return_type'] = type_
-        return (['get_local $' + str(label)], env)
+        return (['local.get $' + str(label)], env)
     else:
         die('variable ' + lval.name + ' is not declared', env['outpath'])
 
@@ -259,16 +259,16 @@ def for_(for_, env):
     """
     i_index = len(env['locals'])
     env['locals'].append( (for_.var, 'i32') )
-    init = comp(for_.start, env)[0] + ['set_local $' + str(i_index)]
+    init = comp(for_.start, env)[0] + ['local.set $' + str(i_index)]
 
     t_index = len(env['locals'])
     env['locals'].append( (for_.var + '_t', 'i32') )
-    termination = comp(for_.end, env)[0] + ['set_local $' + str(t_index)]
+    termination = comp(for_.end, env)[0] + ['local.set $' + str(t_index)]
 
     for_body = comp(for_.body, env)[0]
 
-    increment = ['get_local $' + str(i_index), 'i32.const 1', 'i32.add', 'set_local $' + str(i_index)]
-    condition = ['get_local $' + str(i_index), 'get_local $' + str(t_index), 'i32.le_s', 'br_if 0']
+    increment = ['local.get $' + str(i_index), 'i32.const 1', 'i32.add', 'local.set $' + str(i_index)]
+    condition = ['local.get $' + str(i_index), 'local.get $' + str(t_index), 'i32.le_s', 'br_if 0']
 
     loop_init = ['  ' + op for op in init + termination]
     loop_body = ['    ' + op for op in for_body + increment + condition]
