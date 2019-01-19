@@ -5,8 +5,8 @@ rm tests/*.err
 for i in tests/*.tig
 do
     FILE=$(echo $i | cut -c7-)
-    echo "* compile $FILE"
-    python compiler.py $FILE
+    echo -e "\n\n* compile $FILE"
+    python3 compiler.py $FILE
 done
 
 for i in tests/*.wat

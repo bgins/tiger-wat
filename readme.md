@@ -1,35 +1,33 @@
 # tiger-wat
 
-`tiger-wat` is a Tiger to WebAssembly compiler. The principal component is a
-backend that generates WebAssembly text. The backend relies on ASTs produced by
-`tiger-rpython` and uses the WebAssembly spec interpreter to validate the output
-and convert it to the binary format. `tiger-wat` is written in Python 3.
+`tiger-wat` is a Tiger to WebAssembly compiler. The main component is a backend
+that generates WebAssembly text. The backend relies on ASTs produced by
+[tiger-rpython](https://github.com/abrown/tiger-rpython) and uses the [WebAssembly reference
+interpreter](https://github.com/WebAssembly/spec/tree/master/interpreter) to
+validate the output and convert it to the binary format.
 
 Only a small subset of Tiger language is currently implemented, including
-integers, variables, binary expressions, functions, let expressions, while
-expressions, for expressions, and if expressions.
+integers, variables, binary expressions, functions, sequences, let expressions,
+while expressions, for expressions, and if expressions.
 
-## Installation
+`tiger-wat` includes a testbench application. The testbench server compiles test
+cases and serves them to a web client. The client runs the tests and compares
+actual and expected results.
 
-1. Clone the repository using the `--recursive` flag to clone `tiger-rpython` as
-   well
+## Setup
 
-2. Download the [WebAssembly spec](https://github.com/WebAssembly/spec), compile
-the interpreter, and place the `wasm` binary in `/usr/bin/` or some equivalent
-directory.
+1. Clone the repository with the `--recursive` flag 
 
-3. If you plan on using the testbench web application, install
-   [node](https://nodejs.org/en/download/) 8. In the `testbench` directory, run
-   `npm install` to install dependencies and `node server.js` to run the server.
+2. Clone the WebAssembly spec, compile the interpreter, and place the `wasm`
+   binary on your `PATH`
+
+4. Run `npm install` in the `testbench` directory
    
 ## Use
 
-The compiler can be used without the testing environment for a single file in
-the `tests` directory. For example, `python compiler.py int.tig`. All tests can
-be compiled using the script `compile.bash`.
+Run the testbench with `node server.js`. 
 
-The testbench application runs on `localhost:8080` and has been tested in
-Firefox, Chrome, and Edge.
-
-
+The compiler can also be used without the testbench to compile at the command
+line. For example, `python3 compiler.py int.tig` will compile the `int.tig`
+test. Use `compile.bash` to compile all of the tests.
 
